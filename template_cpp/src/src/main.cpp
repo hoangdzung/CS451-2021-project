@@ -6,6 +6,8 @@
 #include "hello.h"
 #include <signal.h>
 
+std::vector<std::string> outputs;
+std::ofstream outputFile;
 
 static void stop(int) {
   // reset signal handlers to default
@@ -18,6 +20,12 @@ static void stop(int) {
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
 
+  outputFile << "Testing" << "\n";
+  for(auto const &output: outputs){
+    outputFile << output << "\n" ;
+  }
+  outputFile.close();
+  
   // exit directly from signal handler
   exit(0);
 }
@@ -29,6 +37,7 @@ int main(int argc, char **argv) {
   // `true` means that a config file is required.
   // Call with `false` if no config file is necessary.
   bool requireConfig = true;
+  unsigned long m,i;
 
   Parser parser(argc, argv);
   parser.parse();
@@ -58,6 +67,7 @@ int main(int argc, char **argv) {
   std::cout << "Path to output:\n";
   std::cout << "===============\n";
   std::cout << parser.outputPath() << "\n\n";
+  outputFile.open(parser.outputPath());
 
   std::cout << "Path to config:\n";
   std::cout << "===============\n";
@@ -67,6 +77,19 @@ int main(int argc, char **argv) {
 
   std::cout << "Broadcasting and delivering messages...\n\n";
 
+  std::ifstream config_file(parser.configPath());
+  config_file >> m >> i;
+  config_file.close();
+  std::cout << "Send "<< m << "messages to " << i << "\n";
+
+  // create socket and bind it to a port
+  // socket_desc = create_and_bind(address, port, size of message)
+  // if my_id != rv_id:
+  //  for i in range(m):
+  //    perfect_link_send(i, address_rv, port_rv)
+  // else:
+  //  perfect_link_receive(i, address_rv, port_rv)
+  
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
   while (true) {
