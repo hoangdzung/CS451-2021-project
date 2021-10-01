@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "parser.hpp"
+#include "udp.hpp"
 #include "hello.h"
 #include <signal.h>
 
@@ -81,7 +82,14 @@ int main(int argc, char **argv) {
   config_file >> m >> i;
   config_file.close();
   std::cout << "Send "<< m << "messages to " << i << "\n";
-
+  std::string testMsg ("Hello");
+  UDPSocket udpSocket = UDPSocket(hosts[parser.id()]);
+  if (parser.id() != i) {
+    udpSocket.send(hosts[i], testMsg);
+  } else {
+    std::string msgRecv = udpSocket.receive();
+    std::cout << i << " received " << msgRecv << "\n";
+  }
   // create socket and bind it to a port
   // socket_desc = create_and_bind(address, port, size of message)
   // if my_id != rv_id:
