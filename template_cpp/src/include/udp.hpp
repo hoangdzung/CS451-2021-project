@@ -14,5 +14,7 @@ class UDPSocket {
     private:
         Parser::Host localhost;
         int sockfd; // socket file descriptor
+        unsigned long msg_id;
+        std::vector<Msg> receivedMsgs;
         int setupSocket(Parser::Host host);
 };

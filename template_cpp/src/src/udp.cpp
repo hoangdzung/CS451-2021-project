@@ -5,6 +5,7 @@
 UDPSocket::UDPSocket(Parser::Host localhost) {
     this->localhost = localhost;
     sockfd = this->setupSocket(localhost);
+    msg_id = 0;
 }
 void UDPSocket::send(Parser::Host dest, unsigned int msg) {
     struct sockaddr_in destaddr;
@@ -14,8 +15,10 @@ void UDPSocket::send(Parser::Host dest, unsigned int msg) {
     destaddr.sin_port = dest.port;
     struct Msg wrapedMsg = {
         this->localhost.id,
+        msg_id,
         msg
         };
+    msg_id++;
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     while(true) {
         sleep(1);
@@ -31,7 +34,12 @@ Msg UDPSocket::receive() {
         if (recv(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0) < 0) {
             throw std::runtime_error("Receive failed");
         } else {
-            return wrapedMsg;
+            if (std::find(receivedMsgs.begin(), receivedMsgs.end(), wrapedMsg) != receivedMsgs.end()) {
+                std::cout<< "Rejected " << wrapedMsg.content << " from "<< wrapedMsg.sender_id << "\n";
+            } else {
+                receivedMsgs.push_back(wrapedMsg);
+                std::cout<< "Received " << wrapedMsg.content << " from "<< wrapedMsg.sender_id << "\n";
+            }
         }
     }
 }
