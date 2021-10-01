@@ -1,20 +1,18 @@
-// #pragma once 
-#ifndef UDP_H
+#pragma once
 
-#define UDP_H
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include "parser.hpp"
+#include "msg.hpp"
 
 class UDPSocket {
     public:
         UDPSocket(){};
         UDPSocket(Parser::Host localhost);
-        void send(Parser::Host dest, std::string msg);
-        std::string receive();
+        void send(Parser::Host dest, unsigned int msg);
+        Msg receive();
     private:
         Parser::Host localhost;
         int sockfd; // socket file descriptor
         int setupSocket(Parser::Host host);
 };
-#endif

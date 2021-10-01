@@ -1,36 +1,42 @@
 #include "udp.hpp"
 
+// Reference: https://www.geeksforgeeks.org/udp-server-client-implementation-c/
+
 UDPSocket::UDPSocket(Parser::Host localhost) {
     this->localhost = localhost;
     sockfd = this->setupSocket(localhost);
 }
-void UDPSocket::send(Parser::Host dest, std::string msg) {
+void UDPSocket::send(Parser::Host dest, unsigned int msg) {
     struct sockaddr_in destaddr;
     memset(&destaddr, 0, sizeof(destaddr));
     destaddr.sin_family = AF_INET; //IPv4
     destaddr.sin_addr.s_addr = dest.ip;
     destaddr.sin_port = dest.port;
+    struct Msg wrapedMsg = {
+        this->localhost.id,
+        msg
+        };
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
-    sendto(this->sockfd, msg.c_str(), strlen(msg.c_str()), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+    while(true) {
+        sleep(1);
+        // std::cout << "send" << "\n";
+        sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+    }
 }
 
-std::string UDPSocket::receive() {
+Msg UDPSocket::receive() {
     // Reference: https://stackoverflow.com/questions/18670807/sending-and-receiving-stdstring-over-socket
-    const unsigned int MAX_BUF_LENGTH = 4096;
-    std::vector<char> buffer(MAX_BUF_LENGTH);
-    std::string msgRecv;  
+    struct Msg wrapedMsg; 
     while (true) {
-        if (recv(this->sockfd, &buffer[0], buffer.size(), 0) < 0) {
+        if (recv(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0) < 0) {
             throw std::runtime_error("Receive failed");
         } else {
-            msgRecv.append( buffer.cbegin(), buffer.cend() );
-            std::cout << msgRecv << "\n";
+            return wrapedMsg;
         }
     }
 }
 
 int UDPSocket::setupSocket(Parser::Host host) {
-    // Reference: https://www.geeksforgeeks.org/udp-server-client-implementation-c/
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0) {
         throw std::runtime_error("Socket creation failed");

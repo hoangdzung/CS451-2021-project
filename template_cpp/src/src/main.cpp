@@ -1,6 +1,8 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <string>
+#include <sstream>
 
 #include "parser.hpp"
 #include "udp.hpp"
@@ -81,23 +83,24 @@ int main(int argc, char **argv) {
   std::ifstream config_file(parser.configPath());
   config_file >> m >> i;
   config_file.close();
-  std::cout << "Send "<< m << "messages to " << i << "\n";
-  std::string testMsg ("Hello");
-  UDPSocket udpSocket = UDPSocket(hosts[parser.id()]);
+  unsigned int testMsg = 10;
+  UDPSocket udpSocket = UDPSocket(hosts[parser.id()-1]);
   if (parser.id() != i) {
-    udpSocket.send(hosts[i], testMsg);
+    
+    std::ostringstream oss;
+    oss << "b " << testMsg << "\n";
+    // std::cout << oss.str() << "\n";
+    outputs.push_back(oss.str());
+
+    udpSocket.send(hosts[i-1], testMsg);
   } else {
-    std::string msgRecv = udpSocket.receive();
-    std::cout << i << " received " << msgRecv << "\n";
+    Msg msgRecv = udpSocket.receive();
+    std::ostringstream oss;
+    oss << "d " <<  msgRecv.sender_id << " " << msgRecv.content << "\n";
+    // std::cout << oss.str() << "\n";
+    outputs.push_back(oss.str());
   }
-  // create socket and bind it to a port
-  // socket_desc = create_and_bind(address, port, size of message)
-  // if my_id != rv_id:
-  //  for i in range(m):
-  //    perfect_link_send(i, address_rv, port_rv)
-  // else:
-  //  perfect_link_receive(i, address_rv, port_rv)
-  
+  std::cout << "Done" << "\n";
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
   while (true) {
