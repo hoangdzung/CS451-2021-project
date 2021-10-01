@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
   } else {
     Msg msgRecv = udpSocket.receive();
     std::ostringstream oss;
-    oss << "d " <<  msgRecv.sender_id << " " << msgRecv.content << "\n";
+    oss << "d " <<  msgRecv.sender.id << " " << msgRecv.content << "\n";
     // std::cout << oss.str() << "\n";
     outputs.push_back(oss.str());
   }
