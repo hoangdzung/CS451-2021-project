@@ -11,8 +11,14 @@ class UDPSocket {
         UDPSocket(){};
         UDPSocket(Parser::Host localhost);
         UDPSocket(const UDPSocket &);
+        // bool UDPSocket& operator=(const UDPSocket&);
+        void start();
         void put(Parser::Host dest, unsigned int msg);
+        std::vector<std::string> getLogs();
+        UDPSocket& operator=(const UDPSocket & other);
+
     private:
+        std::vector<std::string> logs;
         Parser::Host localhost;
         int sockfd; // socket file descriptor
         unsigned long msg_id;

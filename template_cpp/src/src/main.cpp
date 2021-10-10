@@ -9,8 +9,8 @@
 #include "hello.h"
 #include <signal.h>
 
-std::vector<std::string> outputs;
 std::ofstream outputFile;
+UDPSocket udpSocket;
 
 static void stop(int) {
   // reset signal handlers to default
@@ -24,7 +24,7 @@ static void stop(int) {
   std::cout << "Writing output.\n";
 
   outputFile << "Testing" << "\n";
-  for(auto const &output: outputs){
+  for(auto const &output: udpSocket.getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
@@ -84,14 +84,10 @@ int main(int argc, char **argv) {
   config_file >> m >> i;
   config_file.close();
   unsigned int testMsg = 10;
-  UDPSocket udpSocket = UDPSocket(hosts[parser.id()-1]);
+  udpSocket = UDPSocket(hosts[parser.id()-1]);
+  udpSocket.start(); //if not seperate this, we have 2 untrackable socket
   if (parser.id() != i) {
     for (unsigned int msg=1;msg<=m;msg ++) {
-      std::ostringstream oss;
-      oss << "b " << msg << "\n";
-      // std::cout << oss.str() << "\n";
-      outputs.push_back(oss.str());
-
       udpSocket.put(hosts[i-1], msg);      
     }
   }

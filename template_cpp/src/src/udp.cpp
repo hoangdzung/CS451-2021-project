@@ -1,4 +1,7 @@
 #include<thread>
+#include <chrono>         // std::chrono::seconds
+#include <algorithm>
+
 #include "udp.hpp"
 
 // Reference: https://www.geeksforgeeks.org/udp-server-client-implementation-c/
@@ -7,11 +10,23 @@ UDPSocket::UDPSocket(Parser::Host localhost) {
     this->localhost = localhost;
     sockfd = this->setupSocket(localhost);
     msg_id = 0;
+}
+
+void UDPSocket::start() {
     std::thread sendThread(&UDPSocket::send, this);
     std::thread receiveThread(&UDPSocket::receive, this);
 
     sendThread.detach(); 
     receiveThread.detach(); 
+}
+UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
+    this->logs = other.logs;
+    this->localhost = other.localhost;
+    this->sockfd = other.sockfd;
+    this->msg_id = other.msg_id;
+    this->msgQueue = other.msgQueue;
+    this->receivedMsgs = other.receivedMsgs;
+    return *this;
 }
 
 struct sockaddr_in UDPSocket::setUpDestAddr(Parser::Host dest) {
@@ -34,8 +49,11 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg) {
         };
     msg_id++;
     msgQueueLock.lock();
-    std::cout << "Put msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
+    // std::cout << "Put msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
     msgQueue.push_back(wrapedMsg);
+    std::ostringstream oss;
+    oss << "b " << msg;
+    logs.push_back(oss.str());
     msgQueueLock.unlock();
 
 }
@@ -45,6 +63,7 @@ void UDPSocket::send() {
     while(true) {
         msgQueueLock.lock();
         std::vector<Msg> copiedMsgQueue = msgQueue;
+        // std::cout << "Send:" << msgQueue.size() << "\n";
         msgQueueLock.unlock();
         // if (copiedMsgQueue.size()==0) {
         //     std::cout << "Empty msqQueue" << "\n";
@@ -53,6 +72,7 @@ void UDPSocket::send() {
             struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiver);
             std::cout << "Send msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
             sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+            std::this_thread::sleep_for (std::chrono::seconds(1));
         }
     }
 }
@@ -61,13 +81,17 @@ void UDPSocket::receive() {
     // Reference: https://stackoverflow.com/questions/18670807/sending-and-receiving-stdstring-over-socket
     struct Msg wrapedMsg; 
     while (true) {
+        std::this_thread::sleep_for (std::chrono::seconds(1));
+
         if (recv(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0) < 0) {
             throw std::runtime_error("Receive failed");
         } else {
             if (wrapedMsg.is_ack) {
-                std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.content << "\n";
                 msgQueueLock.lock();
-                std::remove(msgQueue.begin(), msgQueue.end(), wrapedMsg);
+                std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.content << "\n";
+                // std::cout << "Before:" << msgQueue.size() << "\n";
+                msgQueue.erase(std::remove(msgQueue.begin(), msgQueue.end(), wrapedMsg), msgQueue.end());
+                // std::cout << "After:" << msgQueue.size() << "\n";
                 msgQueueLock.unlock();
             } else {
                 //normal msg
@@ -77,6 +101,9 @@ void UDPSocket::receive() {
                 } else {
                     //otherwise, save it
                     receivedMsgs.push_back(wrapedMsg);
+                    std::ostringstream oss;
+                    oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
+                    logs.push_back(oss.str());
                     std::cout<< "Received " << wrapedMsg.content << " from "<< wrapedMsg.sender.id << "\n";
                 }    
                 // send Ack back to sender
@@ -107,4 +134,8 @@ int UDPSocket::setupSocket(Parser::Host host) {
         throw std::runtime_error("Bind failed");
     }
     return sockfd;
+}
+
+std::vector<std::string> UDPSocket::getLogs() {
+    return this->logs;
 }
