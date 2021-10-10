@@ -86,21 +86,16 @@ int main(int argc, char **argv) {
   unsigned int testMsg = 10;
   UDPSocket udpSocket = UDPSocket(hosts[parser.id()-1]);
   if (parser.id() != i) {
-    
-    std::ostringstream oss;
-    oss << "b " << testMsg << "\n";
-    // std::cout << oss.str() << "\n";
-    outputs.push_back(oss.str());
+    for (unsigned int msg=1;msg<=m;msg ++) {
+      std::ostringstream oss;
+      oss << "b " << msg << "\n";
+      // std::cout << oss.str() << "\n";
+      outputs.push_back(oss.str());
 
-    udpSocket.send(hosts[i-1], testMsg);
-  } else {
-    Msg msgRecv = udpSocket.receive();
-    std::ostringstream oss;
-    oss << "d " <<  msgRecv.sender.id << " " << msgRecv.content << "\n";
-    // std::cout << oss.str() << "\n";
-    outputs.push_back(oss.str());
+      udpSocket.put(hosts[i-1], msg);      
+    }
   }
-  std::cout << "Done" << "\n";
+  // std::cout << "Done" << "\n";
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
   while (true) {
