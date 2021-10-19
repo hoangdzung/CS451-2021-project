@@ -72,7 +72,6 @@ void UDPSocket::send() {
             struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiver);
             std::cout << "Send msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
             sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
-            std::this_thread::sleep_for (std::chrono::seconds(1));
         }
     }
 }
@@ -81,7 +80,7 @@ void UDPSocket::receive() {
     // Reference: https://stackoverflow.com/questions/18670807/sending-and-receiving-stdstring-over-socket
     struct Msg wrapedMsg; 
     while (true) {
-        std::this_thread::sleep_for (std::chrono::seconds(1));
+        // std::this_thread::sleep_for (std::chrono::seconds(1));
 
         if (recv(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0) < 0) {
             throw std::runtime_error("Receive failed");
