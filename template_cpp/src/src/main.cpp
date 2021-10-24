@@ -82,7 +82,6 @@ int main(int argc, char **argv) {
   std::ifstream config_file(parser.configPath());
   config_file >> m >> i;
   config_file.close();
-  unsigned int testMsg = 10;
   udpSocket = UDPSocket(hosts[parser.id()-1]);
   udpSocket.start(); //if not seperate this, we have 2 untrackable socket
   if (parser.id() != i) {

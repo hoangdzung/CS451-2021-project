@@ -70,7 +70,7 @@ void UDPSocket::send() {
         // }
         for (auto & wrapedMsg : copiedMsgQueue) {
             struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiver);
-            std::cout << "Send msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
+            // std::cout << "Send msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
             sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
         }
     }
@@ -87,7 +87,7 @@ void UDPSocket::receive() {
         } else {
             if (wrapedMsg.is_ack) {
                 msgQueueLock.lock();
-                std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.content << "\n";
+                // std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.content << "\n";
                 // std::cout << "Before:" << msgQueue.size() << "\n";
                 msgQueue.erase(std::remove(msgQueue.begin(), msgQueue.end(), wrapedMsg), msgQueue.end());
                 // std::cout << "After:" << msgQueue.size() << "\n";
@@ -96,14 +96,14 @@ void UDPSocket::receive() {
                 //normal msg
                 if (std::find(receivedMsgs.begin(), receivedMsgs.end(), wrapedMsg) != receivedMsgs.end()) {
                     // if already receive
-                    std::cout<< "Rejected " << wrapedMsg.content << " from "<< wrapedMsg.sender.id << "\n";
+                    // std::cout<< "Rejected " << wrapedMsg.content << " from "<< wrapedMsg.sender.id << "\n";
                 } else {
                     //otherwise, save it
                     receivedMsgs.push_back(wrapedMsg);
                     std::ostringstream oss;
                     oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
                     logs.push_back(oss.str());
-                    std::cout<< "Received " << wrapedMsg.content << " from "<< wrapedMsg.sender.id << "\n";
+                    // std::cout<< "Received " << wrapedMsg.content << " from "<< wrapedMsg.sender.id << "\n";
                 }    
                 // send Ack back to sender
                 wrapedMsg.is_ack = true;
