@@ -6,11 +6,13 @@
 
 #include "parser.hpp"
 #include "udp.hpp"
+#include "beb.hpp"
 #include "hello.h"
 #include <signal.h>
 
 std::ofstream outputFile;
 UDPSocket udpSocket;
+BestEffortBroadcast beb;
 
 static void stop(int) {
   // reset signal handlers to default
@@ -23,7 +25,7 @@ static void stop(int) {
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
 
-  for(auto const &output: udpSocket.getLogs()){
+  for(auto const &output: beb.getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
@@ -80,15 +82,25 @@ int main(int argc, char **argv) {
   std::cout << "Broadcasting and delivering messages...\n\n";
 
   std::ifstream config_file(parser.configPath());
-  config_file >> m >> i;
+
+  // config_file >> m >> i;
+  // config_file.close();
+  // udpSocket = UDPSocket(hosts[parser.id()-1]);
+  // udpSocket.start(); //if not seperate this, we have 2 untrackable socket
+  // if (parser.id() != i) {
+  //   for (unsigned int msg=1;msg<=m;msg ++) {
+  //     udpSocket.put(hosts[i-1], msg);      
+  //   }
+  // }
+
+  config_file >> m;
   config_file.close();
-  udpSocket = UDPSocket(hosts[parser.id()-1]);
-  udpSocket.start(); //if not seperate this, we have 2 untrackable socket
-  if (parser.id() != i) {
-    for (unsigned int msg=1;msg<=m;msg ++) {
-      udpSocket.put(hosts[i-1], msg);      
-    }
+  beb = BestEffortBroadcast(hosts[parser.id()-1], parser.hosts());
+  beb.start();
+  for (unsigned int msg=1;msg<=m;msg ++) {
+    beb.put(msg);      
   }
+
   // std::cout << "Done" << "\n";
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
