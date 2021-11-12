@@ -21,9 +21,11 @@ class UDPSocket {
         std::vector<std::string> getLogs();
         UDPSocket& operator=(const UDPSocket & other);
 
-    private:
+    // private:
+    public:
         Parser::Host localhost;
         AbstractLayer* upperLayer;
+    private:
         std::vector<std::string> logs;
         int sockfd; // socket file descriptor
         unsigned long msg_id;

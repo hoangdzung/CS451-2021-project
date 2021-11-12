@@ -29,7 +29,7 @@ static void stop(int) {
     outputFile << output << "\n" ;
   }
   outputFile.close();
-  
+  delete beb;  
   // exit directly from signal handler
   exit(0);
 }
@@ -98,11 +98,8 @@ int main(int argc, char **argv) {
   //set attributes instead of assignment operator like UDP in previous version 
   // to avoid perfectLink point to wrong one
   // beb = BestEffortBroadcast(...) the addresses of them are different
-  std::cout <<"At main before " << beb << "\n";
   beb = new BestEffortBroadcast(hosts[parser.id()-1], hosts);
   // beb->setAttr(hosts[parser.id()-1], hosts);
-  std::cout <<"At main after " << beb << "\n";
-
   beb->start();
   for (unsigned int msg=1;msg<=m;msg ++) {
     beb->put(msg);      
@@ -114,6 +111,7 @@ int main(int argc, char **argv) {
   while (true) {
     std::this_thread::sleep_for(std::chrono::hours(1));
   }
+  delete beb;  
 
   return 0;
 }
