@@ -22,9 +22,9 @@ class UDPSocket {
         UDPSocket& operator=(const UDPSocket & other);
 
     private:
+        Parser::Host localhost;
         AbstractLayer* upperLayer;
         std::vector<std::string> logs;
-        Parser::Host localhost;
         int sockfd; // socket file descriptor
         unsigned long msg_id;
         std::vector<Msg> msgQueue;

@@ -11,8 +11,8 @@
 #include <signal.h>
 
 std::ofstream outputFile;
-UDPSocket udpSocket;
-BestEffortBroadcast beb;
+UDPSocket* udpSocket;
+BestEffortBroadcast* beb;
 
 static void stop(int) {
   // reset signal handlers to default
@@ -25,7 +25,7 @@ static void stop(int) {
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
 
-  for(auto const &output: beb.getLogs()){
+  for(auto const &output: beb->getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
@@ -85,11 +85,11 @@ int main(int argc, char **argv) {
 
   // config_file >> m >> i;
   // config_file.close();
-  // udpSocket = UDPSocket(hosts[parser.id()-1]);
-  // udpSocket.start(); //if not seperate this, we have 2 untrackable socket
+  // udpSocket = new UDPSocket(hosts[parser.id()-1]);
+  // udpSocket->start(); //if not seperate this, we have 2 untrackable socket
   // if (parser.id() != i) {
   //   for (unsigned int msg=1;msg<=m;msg ++) {
-  //     udpSocket.put(hosts[i-1], msg);      
+  //     udpSocket->put(hosts[i-1], msg);      
   //   }
   // }
 
@@ -98,10 +98,14 @@ int main(int argc, char **argv) {
   //set attributes instead of assignment operator like UDP in previous version 
   // to avoid perfectLink point to wrong one
   // beb = BestEffortBroadcast(...) the addresses of them are different
-  beb.setAttr(hosts[parser.id()-1], hosts);
-  beb.start();
+  std::cout <<"At main before " << beb << "\n";
+  beb = new BestEffortBroadcast(hosts[parser.id()-1], hosts);
+  // beb->setAttr(hosts[parser.id()-1], hosts);
+  std::cout <<"At main after " << beb << "\n";
+
+  beb->start();
   for (unsigned int msg=1;msg<=m;msg ++) {
-    beb.put(msg);      
+    beb->put(msg);      
   }
 
   // std::cout << "Done" << "\n";

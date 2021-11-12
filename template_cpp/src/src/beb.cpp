@@ -3,6 +3,7 @@
 
 BestEffortBroadcast::BestEffortBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks) {
     this->localhost = localhost;
+    std::cout << this << " My id " << this->localhost.id << "\n";
     this->networks = networks;
     this->perfectLink = UDPSocket(localhost, this);
 }
@@ -11,14 +12,9 @@ BestEffortBroadcast& BestEffortBroadcast::operator=(const BestEffortBroadcast & 
     this->localhost = other.localhost;
     this->networks = other.networks;
     this->perfectLink = other.perfectLink;
+    std::cout << this << " My id " << this->localhost.id << "\n";
 
     return *this;
-}
-
-void BestEffortBroadcast::setAttr(Parser::Host localhost, std::vector<Parser::Host> networks) {
-    this->localhost = localhost;
-    this->networks = networks;
-    this->perfectLink = UDPSocket(localhost, this);
 }
 
 void BestEffortBroadcast::start() {

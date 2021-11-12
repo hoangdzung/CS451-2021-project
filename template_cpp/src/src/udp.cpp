@@ -132,6 +132,8 @@ void UDPSocket::receive() {
                 } else {
                     //otherwise, save it
                     receivedMsgs.push_back(wrapedMsg);
+                    std::cout << "Received " << wrapedMsg.content << " from " << wrapedMsg.sender.id <<  "\n";
+
                     if (this->upperLayer != NULL) {
                         this->upperLayer->deliver(wrapedMsg);
                         // std::cout << "Deliver " << wrapedMsg.content << " from " << wrapedMsg.sender.id <<  " to upper layer" << "\n";

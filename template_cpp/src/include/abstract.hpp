@@ -11,13 +11,15 @@ class AbstractLayer {
 
         void deliver(Msg wrapedMsg) {
             std::ostringstream oss;
-            oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
+            std::cout << this <<  " " << localhost.id << " d " << wrapedMsg.sender.id << " " << wrapedMsg.content << "\n";
+            oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
             logs.push_back(oss.str());
         }
 
         void selfDeliver(unsigned int msg) {
             std::ostringstream oss;
-            oss << "d " << localhost.id << " " << msg;
+            std::cout << this <<  " " << localhost.id  << " self d " << localhost.id << " " << msg << "\n";
+            oss << this << " self d " << localhost.id << " " << msg;
             logs.push_back(oss.str());
         }
 
