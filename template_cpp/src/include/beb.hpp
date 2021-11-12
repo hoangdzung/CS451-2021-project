@@ -1,8 +1,10 @@
 #pragma once
 #include "parser.hpp"
 #include "udp.hpp"
+#include "msg.hpp"
+#include "abstract.hpp"
 
-class BestEffortBroadcast {
+class BestEffortBroadcast : public AbstractLayer{
     public:
         BestEffortBroadcast(){};
         BestEffortBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks);
@@ -11,6 +13,7 @@ class BestEffortBroadcast {
         void put(unsigned int msg);
         std::vector<std::string> getLogs();
         BestEffortBroadcast& operator=(const BestEffortBroadcast & other);
+        void setAttr(Parser::Host localhost, std::vector<Parser::Host> networks);
 
     private:
         Parser::Host localhost;

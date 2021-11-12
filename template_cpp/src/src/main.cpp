@@ -95,7 +95,10 @@ int main(int argc, char **argv) {
 
   config_file >> m;
   config_file.close();
-  beb = BestEffortBroadcast(hosts[parser.id()-1], parser.hosts());
+  //set attributes instead of assignment operator like UDP in previous version 
+  // to avoid perfectLink point to wrong one
+  // beb = BestEffortBroadcast(...) the addresses of them are different
+  beb.setAttr(hosts[parser.id()-1], hosts);
   beb.start();
   for (unsigned int msg=1;msg<=m;msg ++) {
     beb.put(msg);      

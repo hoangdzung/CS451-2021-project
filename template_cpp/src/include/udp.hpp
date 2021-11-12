@@ -3,21 +3,26 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <mutex>
+#include <queue>
 #include "parser.hpp"
 #include "msg.hpp"
+#include "abstract.hpp"
 
 class UDPSocket {
     public:
-        UDPSocket(){};
+        UDPSocket();
         UDPSocket(Parser::Host localhost);
+        UDPSocket(Parser::Host localhost, AbstractLayer* upperLayer);
         UDPSocket(const UDPSocket &);
         // bool UDPSocket& operator=(const UDPSocket&);
         void start();
         void put(Parser::Host dest, unsigned int msg);
+        void putAndSend(Parser::Host dest, unsigned int msg);
         std::vector<std::string> getLogs();
         UDPSocket& operator=(const UDPSocket & other);
 
     private:
+        AbstractLayer* upperLayer;
         std::vector<std::string> logs;
         Parser::Host localhost;
         int sockfd; // socket file descriptor

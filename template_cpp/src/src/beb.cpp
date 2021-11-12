@@ -4,7 +4,7 @@
 BestEffortBroadcast::BestEffortBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks) {
     this->localhost = localhost;
     this->networks = networks;
-    this->perfectLink = UDPSocket(localhost);
+    this->perfectLink = UDPSocket(localhost, this);
 }
 
 BestEffortBroadcast& BestEffortBroadcast::operator=(const BestEffortBroadcast & other) {
@@ -15,17 +15,31 @@ BestEffortBroadcast& BestEffortBroadcast::operator=(const BestEffortBroadcast & 
     return *this;
 }
 
+void BestEffortBroadcast::setAttr(Parser::Host localhost, std::vector<Parser::Host> networks) {
+    this->localhost = localhost;
+    this->networks = networks;
+    this->perfectLink = UDPSocket(localhost, this);
+}
+
 void BestEffortBroadcast::start() {
     this->perfectLink.start();
 }
 
 void BestEffortBroadcast::put(unsigned int msg) {
     for (auto host : this->networks) {
-        this->perfectLink.put(host, msg);    
+        if (host.id == this->localhost.id) {
+            continue;
+        } else {
+            this->perfectLink.putAndSend(host, msg);  // broadcasting the message instead of just putting it in the queue  
+        }
     }
+    std::ostringstream oss;
+    oss << "b " << msg;
+    logs.push_back(oss.str());
+    selfDeliver(msg);
 }
 
 std::vector<std::string> BestEffortBroadcast::getLogs() {
-    return this->perfectLink.getLogs();
+    return this->logs;
 } 
 
