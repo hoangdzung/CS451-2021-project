@@ -11,7 +11,6 @@
 #include <signal.h>
 
 std::ofstream outputFile;
-UDPSocket* udpSocket;
 BestEffortBroadcast* beb;
 
 static void stop(int) {

@@ -19,5 +19,5 @@ class BestEffortBroadcast : public AbstractLayer{
     private:
         Parser::Host localhost;
         std::vector<Parser::Host> networks;
-        UDPSocket* perfectLink;
+        UDPSocket perfectLink;
 };

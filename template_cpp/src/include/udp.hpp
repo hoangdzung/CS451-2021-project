@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <mutex>
 #include <queue>
+#include <functional>
 #include "parser.hpp"
 #include "msg.hpp"
 #include "abstract.hpp"
@@ -12,7 +13,7 @@ class UDPSocket {
     public:
         UDPSocket();
         UDPSocket(Parser::Host localhost);
-        UDPSocket(Parser::Host localhost, AbstractLayer* upperLayer);
+        UDPSocket(Parser::Host localhost, std::function<void(Msg)> deliverCallBack);
         UDPSocket(const UDPSocket &);
         // bool UDPSocket& operator=(const UDPSocket&);
         void start();
@@ -21,11 +22,10 @@ class UDPSocket {
         std::vector<std::string> getLogs();
         UDPSocket& operator=(const UDPSocket & other);
 
-    // private:
-    public:
-        Parser::Host localhost;
-        AbstractLayer* upperLayer;
     private:
+        Parser::Host localhost;
+        std::function<void(Msg)> deliverCallBack;
+
         std::vector<std::string> logs;
         int sockfd; // socket file descriptor
         unsigned long msg_id;

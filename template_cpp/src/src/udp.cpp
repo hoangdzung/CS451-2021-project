@@ -7,23 +7,24 @@
 // Reference: https://www.geeksforgeeks.org/udp-server-client-implementation-c/
 
 UDPSocket::UDPSocket() {
-    this->upperLayer = NULL;
+    this->deliverCallBack = [](Msg msg) {};
 }
 UDPSocket::UDPSocket(Parser::Host localhost) {
     this->localhost = localhost;
-    this->upperLayer = NULL;
-    sockfd = this->setupSocket(localhost);
+    this->deliverCallBack = [](Msg msg) {};
+    // sockfd = this->setupSocket(localhost);
     msg_id = 0;
 }
 
-UDPSocket::UDPSocket(Parser::Host localhost, AbstractLayer* upperLayer) {
+UDPSocket::UDPSocket(Parser::Host localhost, std::function<void(Msg)> deliverCallBack) {
     this->localhost = localhost;
-    this->upperLayer = upperLayer;
-    sockfd = this->setupSocket(localhost);
+    this->deliverCallBack = deliverCallBack;
+    // sockfd = this->setupSocket(localhost);
     msg_id = 0;
 }
 
 void UDPSocket::start() {
+    sockfd = this->setupSocket(localhost);
     std::thread sendThread(&UDPSocket::send, this);
     std::thread receiveThread(&UDPSocket::receive, this);
 
@@ -33,7 +34,7 @@ void UDPSocket::start() {
 UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
     this->logs = other.logs;
     this->localhost = other.localhost;
-    this->upperLayer = other.upperLayer;
+    this->deliverCallBack = other.deliverCallBack;
     this->sockfd = other.sockfd;
     this->msg_id = other.msg_id;
     this->msgQueue = other.msgQueue;
@@ -132,16 +133,11 @@ void UDPSocket::receive() {
                 } else {
                     //otherwise, save it
                     receivedMsgs.push_back(wrapedMsg);
-                    std::cout << "Received " << wrapedMsg.content << " from " << wrapedMsg.sender.id <<  "\n";
-
-                    if (this->upperLayer != NULL) {
-                        this->upperLayer->deliver(wrapedMsg);
-                        // std::cout << "Deliver " << wrapedMsg.content << " from " << wrapedMsg.sender.id <<  " to upper layer" << "\n";
-                    } else {
-                        // std::ostringstream oss;
-                        // oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
-                        // logs.push_back(oss.str());
-                    }
+                    // std::cout << "Received " << wrapedMsg.content << " from " << wrapedMsg.sender.id <<  "\n";
+                    // std::ostringstream oss;
+                    // oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
+                    // logs.push_back(oss.str());
+                    this->deliverCallBack(wrapedMsg);
                     // std::cout<< "Received " << wrapedMsg.content << " from "<< wrapedMsg.sender.id << "\n";
                 }    
                 // send Ack back to sender
