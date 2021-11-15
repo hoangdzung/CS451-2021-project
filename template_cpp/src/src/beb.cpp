@@ -1,6 +1,10 @@
 #include "beb.hpp"
 #include "udp.hpp"
 
+BestEffortBroadcast::BestEffortBroadcast() {
+    
+}
+
 BestEffortBroadcast::BestEffortBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks) {
     this->localhost = localhost;
     this->networks = networks;

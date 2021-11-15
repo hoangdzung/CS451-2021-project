@@ -2,11 +2,11 @@
 #include "parser.hpp"
 #include "udp.hpp"
 #include "msg.hpp"
-#include "abstract.hpp"
+// #include "abstract.hpp"
 
-class BestEffortBroadcast : public AbstractLayer{
+class BestEffortBroadcast {
     public:
-        BestEffortBroadcast() =delete;
+        BestEffortBroadcast();
         BestEffortBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks);
         BestEffortBroadcast(const BestEffortBroadcast &);
         ~BestEffortBroadcast();
@@ -17,6 +17,7 @@ class BestEffortBroadcast : public AbstractLayer{
         std::vector<std::string> getLogs();
         BestEffortBroadcast& operator=(const BestEffortBroadcast & other);
     private:
+        std::vector<std::string> logs;
         Parser::Host localhost;
         std::vector<Parser::Host> networks;
         UDPSocket perfectLink;

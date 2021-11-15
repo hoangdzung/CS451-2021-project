@@ -5,7 +5,7 @@
 class AbstractLayer {
     public:
         AbstractLayer() {}
-        virtual ~AbstractLayer() {}
+        ~AbstractLayer() {}
         std::vector<std::string> logs;
         virtual void deliver(Msg wrapedMsg) = 0;
         virtual void selfDeliver(unsigned int msg) = 0;
