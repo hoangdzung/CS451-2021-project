@@ -57,7 +57,7 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg) {
         this->localhost,
         dest,
         msg_id,
-        msg,
+        std::make_pair(this->localhost, msg),
         false
         };
     msg_id++;
@@ -71,7 +71,46 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg) {
 
 }
 
+void UDPSocket::put(Parser::Host dest, std::pair<Parser::Host, unsigned int> msg) {    
+    struct sockaddr_in destaddr = this->setUpDestAddr(dest);
+    struct Msg wrapedMsg = {
+        this->localhost,
+        dest,
+        msg_id,
+        msg,
+        false
+        };
+    msg_id++;
+    msgQueueLock.lock();
+    // std::cout << "Put msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
+    msgQueue.push_back(wrapedMsg);
+    // std::ostringstream oss;
+    // oss << "b " << msg;
+    // logs.push_back(oss.str());
+    msgQueueLock.unlock();
+}
+
 void UDPSocket::putAndSend(Parser::Host dest, unsigned int msg) {    
+    struct sockaddr_in destaddr = this->setUpDestAddr(dest);
+    struct Msg wrapedMsg = {
+        this->localhost,
+        dest,
+        msg_id,
+        std::make_pair(this->localhost, msg),
+        false
+        };
+    msg_id++;
+    sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+    msgQueueLock.lock();
+    // std::cout << "Put msg " << wrapedMsg.content << " to " <<wrapedMsg.receiver.id << "\n";
+    msgQueue.push_back(wrapedMsg);
+    // std::ostringstream oss;
+    // oss << "b " << msg;
+    // logs.push_back(oss.str());
+    msgQueueLock.unlock();
+}
+
+void UDPSocket::putAndSend(Parser::Host dest, std::pair<Parser::Host, unsigned int> msg) {    
     struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
         this->localhost,
@@ -90,7 +129,6 @@ void UDPSocket::putAndSend(Parser::Host dest, unsigned int msg) {
     // logs.push_back(oss.str());
     msgQueueLock.unlock();
 }
-
 void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     while(true) {

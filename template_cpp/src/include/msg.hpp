@@ -1,11 +1,13 @@
 #pragma once
 #include "parser.hpp"
+#include <utility> 
 
 struct Msg {
     Parser::Host sender;
     Parser::Host receiver;
     unsigned long msg_id;
-    unsigned int content;
+    // unsigned int content;
+    std::pair<Parser::Host, unsigned int> content; 
     bool is_ack;
     public:
     bool operator==( const Msg& other ) {

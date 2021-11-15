@@ -33,6 +33,10 @@ public:
       }
     }
 
+    bool operator==(const Host &other) const {
+      return id == other.id;
+    }
+
     std::string ipReadable() const {
       in_addr tmp_ip;
       tmp_ip.s_addr = ip;

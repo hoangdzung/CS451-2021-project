@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
   // beb->setAttr(hosts[parser.id()-1], hosts);
   beb.start();
   for (unsigned int msg=1;msg<=m;msg ++) {
-    beb.put(msg);      
+    beb.broadcast(msg);      
   }
 
   // std::cout << "Done" << "\n";
