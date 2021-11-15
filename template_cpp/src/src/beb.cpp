@@ -8,13 +8,13 @@ BestEffortBroadcast::BestEffortBroadcast() {
 BestEffortBroadcast::BestEffortBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks) {
     this->localhost = localhost;
     this->networks = networks;
-    this->perfectLink = UDPSocket(localhost, [this](Msg msg){this->deliver(msg);});
+    // this->perfectLink = UDPSocket(localhost, [this](Msg msg){this->deliver(msg);});
 }
 
 BestEffortBroadcast& BestEffortBroadcast::operator=(const BestEffortBroadcast & other) {
     this->localhost = other.localhost;
     this->networks = other.networks;
-    this->perfectLink = other.perfectLink;
+    // this->perfectLink = other.perfectLink;
     this->logs = other.logs;
 
     return *this;
@@ -25,6 +25,7 @@ BestEffortBroadcast::~BestEffortBroadcast() {
 }
 
 void BestEffortBroadcast::start() {
+    this->perfectLink = UDPSocket(this->localhost, [this](Msg msg){this->deliver(msg);});
     this->perfectLink.start();
 }
 
@@ -48,7 +49,7 @@ std::vector<std::string> BestEffortBroadcast::getLogs() {
 
 void BestEffortBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    // std::cout << this <<  " " << localhost.id << " d " << wrapedMsg.sender.id << " " << wrapedMsg.content << "\n";
+    std::cout << "Received " << wrapedMsg.content << " from " << wrapedMsg.sender.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
     oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
     logs.push_back(oss.str());
