@@ -37,7 +37,7 @@ void BestEffortBroadcast::start() {
     this->perfectLink.start();
 }
 
-void BestEffortBroadcast::broadcast(unsigned int msg) {
+void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
     std::ostringstream oss;
     oss << "b " << msg;
     logs.push_back(oss.str());
@@ -45,18 +45,18 @@ void BestEffortBroadcast::broadcast(unsigned int msg) {
         if (host.id == this->localhost.id) {
             selfDeliver(msg);
         } else {
-            this->perfectLink.putAndSend(host, msg);  // broadcasting the message instead of just putting it in the queue  
+            this->perfectLink.putAndSend(host, msg, seqNum);  // broadcasting the message instead of just putting it in the queue  
         }
     }
 }
 
-void BestEffortBroadcast::broadcast(host_msg_type msg) {
+void BestEffortBroadcast::broadcast(Payload msg) {
     std::ostringstream oss;
-    oss << "b " << msg.second;
+    oss << "b " << msg.content;
     logs.push_back(oss.str());
     for (auto host : this->networks) {
         if (host.id == this->localhost.id) {
-            selfDeliver(msg.second);
+            selfDeliver(msg.content);
         } else {
             this->perfectLink.putAndSend(host, msg);  // broadcasting the message instead of just putting it in the queue  
         }
@@ -69,9 +69,9 @@ std::vector<std::string> BestEffortBroadcast::getLogs() {
 
 void BestEffortBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    // std::cout << "Received " << wrapedMsg.content.second << " from " << wrapedMsg.content.first <<  "\n";
+    std::cout << "Received " << wrapedMsg.content.content << " from " << wrapedMsg.content.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
-    oss << "d " << wrapedMsg.content.first << " " << wrapedMsg.content.second;
+    oss << "d " << wrapedMsg.content.id << " " << wrapedMsg.content.content;
     logs.push_back(oss.str());
     this->deliverCallBack(wrapedMsg);
 }

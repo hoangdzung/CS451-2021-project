@@ -17,10 +17,10 @@ class UDPSocket {
         UDPSocket(const UDPSocket &);
         // bool UDPSocket& operator=(const UDPSocket&);
         void start();
-        void put(Parser::Host dest, unsigned int msg);
-        void put(Parser::Host dest, host_msg_type msg);
-        void putAndSend(Parser::Host dest, unsigned int msg);
-        void putAndSend(Parser::Host dest, host_msg_type msg);
+        void put(Parser::Host dest, unsigned int msg, unsigned long seqNum);
+        void put(Parser::Host dest, Payload msg);
+        void putAndSend(Parser::Host dest, unsigned int msg, unsigned long seqNum);
+        void putAndSend(Parser::Host dest, Payload msg);
         std::vector<std::string> getLogs();
         UDPSocket& operator=(const UDPSocket & other);
 

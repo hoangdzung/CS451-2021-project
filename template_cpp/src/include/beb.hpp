@@ -14,8 +14,8 @@ class BestEffortBroadcast {
         void start();
         void deliver(Msg wrapedMsg);
         void selfDeliver(unsigned int msg);
-        void broadcast(unsigned int msg);
-        void broadcast(host_msg_type msg);
+        void broadcast(unsigned int msg, unsigned long seqNum=0);
+        void broadcast(Payload msg);
 
         std::vector<std::string> getLogs();
         BestEffortBroadcast& operator=(const BestEffortBroadcast & other);

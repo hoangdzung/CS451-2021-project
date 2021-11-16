@@ -12,28 +12,30 @@ class UniReliableBroadcast {
     public:
         UniReliableBroadcast();
         UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks);
+        UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack);
         UniReliableBroadcast(const UniReliableBroadcast &);
         ~UniReliableBroadcast();
         void start();
         void deliver(Msg wrapedMsg);
         void receive(Msg wrapedMsg);
-        void broadcast(unsigned int msg);
+        void broadcast(unsigned int msg, unsigned long seqNum=0);
         std::vector<std::string> getLogs();
         UniReliableBroadcast& operator=(const UniReliableBroadcast & other);
     private:
+        std::function<void(Msg)> deliverCallBack;
         void addAck(Msg wrapedMsg);
-        void addAck(host_msg_type msg);
+        void addAck(Payload msg);
         bool isPending(Msg wrapedMsg);
         bool canDeliver(Msg wrapedMsg);
         bool isDelivered(Msg wrapedMsg);
-        host_msg_type addSelfHost(unsigned int msg);
+        Payload addSelfHost(unsigned int msg, unsigned long seqNum=0);
         long unsigned int networkSize;
-        std::unordered_set<host_msg_type,pair_hash> pending;
-        std::unordered_set<host_msg_type,pair_hash> delivered;
+        std::unordered_set<Payload,hash_custom> pending;
+        std::unordered_set<Payload,hash_custom> delivered;
         std::unordered_map<
-            host_msg_type, 
+            Payload, 
             std::unordered_set<unsigned long>,
-            pair_hash
+            hash_custom
             > acks;
         std::vector<std::string> logs;
         Parser::Host localhost;

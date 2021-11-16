@@ -51,13 +51,14 @@ struct sockaddr_in UDPSocket::setUpDestAddr(Parser::Host dest) {
     return destaddr;
 }
 
-void UDPSocket::put(Parser::Host dest, unsigned int msg) {    
+void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum = 0) {    
     struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
         this->localhost,
         dest,
         msg_id,
-        std::make_pair(this->localhost.id, msg),
+        // std::make_pair(this->localhost.id, msg),
+        Payload ({this->localhost.id, msg, seqNum}),
         false
         };
     msg_id++;
@@ -71,7 +72,7 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg) {
 
 }
 
-void UDPSocket::put(Parser::Host dest, host_msg_type msg) {    
+void UDPSocket::put(Parser::Host dest, Payload msg) {    
     struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
         this->localhost,
@@ -90,14 +91,14 @@ void UDPSocket::put(Parser::Host dest, host_msg_type msg) {
     msgQueueLock.unlock();
 }
 
-void UDPSocket::putAndSend(Parser::Host dest, unsigned int msg) {    
+void UDPSocket::putAndSend(Parser::Host dest, unsigned int msg, unsigned long seqNum) {    
     struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
         this->localhost,
         dest,
         msg_id,
-        std::make_pair(this->localhost.id, msg),
-        false
+        // std::make_pair(this->localhost.id, msg),
+        Payload ({this->localhost.id, msg, seqNum}),        false
         };
     msg_id++;
     sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
@@ -110,7 +111,7 @@ void UDPSocket::putAndSend(Parser::Host dest, unsigned int msg) {
     msgQueueLock.unlock();
 }
 
-void UDPSocket::putAndSend(Parser::Host dest, host_msg_type msg) {    
+void UDPSocket::putAndSend(Parser::Host dest, Payload msg) {    
     struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
         this->localhost,

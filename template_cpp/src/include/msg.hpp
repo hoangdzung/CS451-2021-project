@@ -1,8 +1,9 @@
 #pragma once
 #include "parser.hpp"
 #include <utility> 
+#include <array>
 
-typedef std::pair<unsigned long, unsigned int> host_msg_type;
+// typedef std::pair<unsigned long, unsigned int> host_msg_type;
 
 struct pair_hash {
     template <class T1, class T2>
@@ -16,12 +17,30 @@ struct pair_hash {
     }
 };
 
+struct Payload {
+    unsigned long id;
+    unsigned int content;
+    unsigned long seqNum;
+    public:
+    bool operator==( const Payload& other ) const {
+        return id == other.id &&
+                content == other.content &&
+                seqNum == other.seqNum;
+    }
+};
+
+// bool operator==(const Payload& left, const Payload& right) {
+//     return left.id == right.id &&
+//             left.content == right.content &&
+//             left.seqNum == right.seqNum;
+// }
+
 struct Msg {
     Parser::Host sender;
     Parser::Host receiver;
     unsigned long msg_id;
     // unsigned int content;
-    host_msg_type content; 
+    Payload content; 
     bool is_ack;
     public:
     bool operator==( const Msg& other ) {
@@ -38,4 +57,10 @@ struct Msg {
                     receiver.port == other.receiver.port &&
                     msg_id == other.msg_id;
     }
+};
+
+struct hash_custom {
+  size_t operator()(const Payload & x) const {
+    return std::hash<long unsigned int>()(x.id) ^ std::hash< unsigned int>()(x.content) ^ std::hash<long unsigned int>()(x.seqNum);
+  }
 };

@@ -5,12 +5,14 @@
 
 UniReliableBroadcast::UniReliableBroadcast() {
     this->networkSize = 0;
+    this->deliverCallBack = [](Msg msg) {};
 }
 
 UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks) {
     this->localhost = localhost;
     this->networks = networks;
     this->networkSize = networks.size();
+    this->deliverCallBack = [](Msg msg) {};
     this->networks.erase(
         std::remove_if(this->networks.begin(), this->networks.end(),
         [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
@@ -26,6 +28,7 @@ UniReliableBroadcast& UniReliableBroadcast::operator=(const UniReliableBroadcast
     this->delivered = other.delivered;
     this->acks = other.acks;
     this->logs = other.logs;
+    this->deliverCallBack = deliverCallBack;
 
     return *this;
 }
@@ -39,11 +42,11 @@ void UniReliableBroadcast::start() {
     this->bestEffortBroadcast.start();
 }
 
-void UniReliableBroadcast::broadcast(unsigned int msg) {
+void UniReliableBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
     std::ostringstream oss;
     oss << "b " << msg;
     logs.push_back(oss.str());
-    host_msg_type extendMsg = this->addSelfHost(msg);
+    Payload extendMsg = this->addSelfHost(msg, seqNum);
     this->bestEffortBroadcast.broadcast(extendMsg);
     this->addAck(extendMsg);
     pending.insert(extendMsg);
@@ -62,11 +65,11 @@ void UniReliableBroadcast::addAck(Msg wrapedMsg) {
     }
 }
 
-void UniReliableBroadcast::addAck(host_msg_type msg) {
+void UniReliableBroadcast::addAck(Payload msg) {
     if (this->acks.find(msg) != this->acks.end()) {
-        this->acks[msg].insert(msg.first);
+        this->acks[msg].insert(msg.id);
     } else {
-        this->acks.insert({msg, std::unordered_set<unsigned long>({msg.first})});
+        this->acks.insert({msg, std::unordered_set<unsigned long>({msg.id})});
     }
 }
 
@@ -87,7 +90,7 @@ bool UniReliableBroadcast::canDeliver(Msg wrapedMsg) {
 }
 
 void UniReliableBroadcast::receive(Msg wrapedMsg) {
-    std::cout << "Received (" << wrapedMsg.content.first << "," << wrapedMsg.content.second << ") from " << wrapedMsg.sender.id << "\n";
+    std::cout << "Received (" << wrapedMsg.content.content << "," << wrapedMsg.content.id << ") from " << wrapedMsg.sender.id << "\n";
     this->addAck(wrapedMsg);
     if (!isPending(wrapedMsg)) {
         this->pending.insert(wrapedMsg.content);
@@ -101,14 +104,16 @@ void UniReliableBroadcast::receive(Msg wrapedMsg) {
 void UniReliableBroadcast::deliver(Msg wrapedMsg) {
     this->delivered.insert(wrapedMsg.content);
     std::ostringstream oss;
-    std::cout << "Delivered " << wrapedMsg.content.second << " from " << wrapedMsg.content.first <<  "\n";
+    std::cout << "Delivered " << wrapedMsg.content.content << " from " << wrapedMsg.content.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
-    oss << "d " << wrapedMsg.content.first << " " << wrapedMsg.content.second;
+    oss << "d " << wrapedMsg.content.content << " " << wrapedMsg.content.id;
     logs.push_back(oss.str());
+    this->deliverCallBack(wrapedMsg);
 }
 
-host_msg_type UniReliableBroadcast::addSelfHost(unsigned int msg) {
-    return std::make_pair(this->localhost.id, msg);
+Payload UniReliableBroadcast::addSelfHost(unsigned int msg, unsigned long seqNum) {
+    // return std::make_pair(this->localhost.id, msg);
+    return Payload({this->localhost.id, msg, seqNum});
 }
 
 
