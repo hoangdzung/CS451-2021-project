@@ -7,11 +7,13 @@
 #include "parser.hpp"
 #include "udp.hpp"
 #include "beb.hpp"
+#include "urb.hpp"
 #include "hello.h"
 #include <signal.h>
 
 std::ofstream outputFile;
 BestEffortBroadcast beb;
+UniReliableBroadcast urb;
 
 static void stop(int) {
   // reset signal handlers to default
@@ -24,11 +26,11 @@ static void stop(int) {
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
 
-  for(auto const &output: beb.getLogs()){
+  for(auto const &output: urb.getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
-  // delete beb;  
+  
   // exit directly from signal handler
   exit(0);
 }
@@ -94,16 +96,16 @@ int main(int argc, char **argv) {
 
   config_file >> m;
   config_file.close();
-  //set attributes instead of assignment operator like UDP in previous version 
-  // to avoid perfectLink point to wrong one
-  // beb = BestEffortBroadcast(...) the addresses of them are different
-  beb = BestEffortBroadcast(hosts[parser.id()-1], hosts);
-  // beb->setAttr(hosts[parser.id()-1], hosts);
-  beb.start();
+  // beb = BestEffortBroadcast(hosts[parser.id()-1], hosts);
+  // beb.start();
+  // for (unsigned int msg=1;msg<=m;msg ++) {
+  //   beb.broadcast(msg);      
+  // }
+  urb = UniReliableBroadcast(hosts[parser.id()-1], hosts);
+  urb.start();
   for (unsigned int msg=1;msg<=m;msg ++) {
-    beb.broadcast(msg);      
+    urb.broadcast(msg);      
   }
-
   // std::cout << "Done" << "\n";
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.

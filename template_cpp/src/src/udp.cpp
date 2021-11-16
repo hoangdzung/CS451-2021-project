@@ -57,7 +57,7 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg) {
         this->localhost,
         dest,
         msg_id,
-        std::make_pair(this->localhost, msg),
+        std::make_pair(this->localhost.id, msg),
         false
         };
     msg_id++;
@@ -71,7 +71,7 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg) {
 
 }
 
-void UDPSocket::put(Parser::Host dest, std::pair<Parser::Host, unsigned int> msg) {    
+void UDPSocket::put(Parser::Host dest, host_msg_type msg) {    
     struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
         this->localhost,
@@ -96,7 +96,7 @@ void UDPSocket::putAndSend(Parser::Host dest, unsigned int msg) {
         this->localhost,
         dest,
         msg_id,
-        std::make_pair(this->localhost, msg),
+        std::make_pair(this->localhost.id, msg),
         false
         };
     msg_id++;
@@ -110,7 +110,7 @@ void UDPSocket::putAndSend(Parser::Host dest, unsigned int msg) {
     msgQueueLock.unlock();
 }
 
-void UDPSocket::putAndSend(Parser::Host dest, std::pair<Parser::Host, unsigned int> msg) {    
+void UDPSocket::putAndSend(Parser::Host dest, host_msg_type msg) {    
     struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
         this->localhost,

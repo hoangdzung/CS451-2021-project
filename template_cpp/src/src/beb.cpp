@@ -50,7 +50,7 @@ void BestEffortBroadcast::broadcast(unsigned int msg) {
     }
 }
 
-void BestEffortBroadcast::broadcast(std::pair<Parser::Host, unsigned int> msg) {
+void BestEffortBroadcast::broadcast(host_msg_type msg) {
     std::ostringstream oss;
     oss << "b " << msg.second;
     logs.push_back(oss.str());
@@ -69,9 +69,9 @@ std::vector<std::string> BestEffortBroadcast::getLogs() {
 
 void BestEffortBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    std::cout << "Received " << wrapedMsg.content.second << " from " << wrapedMsg.content.first.id <<  "\n";
+    // std::cout << "Received " << wrapedMsg.content.second << " from " << wrapedMsg.content.first <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
-    oss << "d " << wrapedMsg.content.first.id << " " << wrapedMsg.content.second;
+    oss << "d " << wrapedMsg.content.first << " " << wrapedMsg.content.second;
     logs.push_back(oss.str());
     this->deliverCallBack(wrapedMsg);
 }

@@ -2,12 +2,26 @@
 #include "parser.hpp"
 #include <utility> 
 
+typedef std::pair<unsigned long, unsigned int> host_msg_type;
+
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator () (const std::pair<T1,T2> &p) const {
+        auto h1 = std::hash<T1>{}(p.first);
+        auto h2 = std::hash<T2>{}(p.second);
+
+        // Mainly for demonstration purposes, i.e. works but is overly simple
+        // In the real world, use sth. like boost.hash_combine
+        return 9999*h1 + h2;  
+    }
+};
+
 struct Msg {
     Parser::Host sender;
     Parser::Host receiver;
     unsigned long msg_id;
     // unsigned int content;
-    std::pair<Parser::Host, unsigned int> content; 
+    host_msg_type content; 
     bool is_ack;
     public:
     bool operator==( const Msg& other ) {
