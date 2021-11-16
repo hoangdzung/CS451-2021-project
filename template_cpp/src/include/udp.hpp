@@ -17,14 +17,12 @@ class UDPSocket {
         UDPSocket(const UDPSocket &);
         // bool UDPSocket& operator=(const UDPSocket&);
         void start();
-        void stop();
         void put(Parser::Host dest, unsigned int msg, unsigned long seqNum=0);
         void put(Parser::Host dest, Payload msg);
         std::vector<std::string> getLogs();
         UDPSocket& operator=(const UDPSocket & other);
 
     private:
-        bool shouldStop;
         Parser::Host localhost;
         std::function<void(Msg)> deliverCallBack;
 
@@ -35,7 +33,6 @@ class UDPSocket {
         std::mutex msgQueueLock;
         std::mutex logsLock;
         std::mutex sentLock;
-        std::mutex stopLock;
 
         std::vector<Msg> receivedMsgs;
         int setupSocket(Parser::Host host);

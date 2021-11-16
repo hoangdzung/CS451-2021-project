@@ -8,21 +8,16 @@
 
 UDPSocket::UDPSocket() {
     this->deliverCallBack = [](Msg msg) {std::cout << "Callback Received " << msg.payload.content << " from " << msg.sender.id <<  " " << &msg << "\n";};
-    this->shouldStop = false;
 }
 UDPSocket::UDPSocket(Parser::Host localhost) {
     this->localhost = localhost;
     this->deliverCallBack = [](Msg msg) {std::cout << "Callback Received " << msg.payload.content << " from " << msg.sender.id <<  " " << &msg << "\n";};
-    // sockfd = this->setupSocket(localhost);
     msg_id = 0;
-    this->shouldStop = false;
 }
 
 UDPSocket::UDPSocket(Parser::Host localhost, std::function<void(Msg)> deliverCallBack) {
     this->localhost = localhost;
     this->deliverCallBack = deliverCallBack;
-    this->shouldStop = false;
-    // sockfd = this->setupSocket(localhost);
     msg_id = 0;
 }
 
@@ -42,7 +37,6 @@ UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
     this->msg_id = other.msg_id;
     this->msgQueue = other.msgQueue;
     this->receivedMsgs = other.receivedMsgs;
-    this->shouldStop = other.shouldStop;
     return *this;
 }
 
@@ -102,42 +96,25 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
 
 }
 
-void UDPSocket::stop(){
-    stopLock.lock();
-    this->shouldStop = true;
-    stopLock.unlock();
-}
-
 void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     while(true) {
-        std::this_thread::sleep_for (std::chrono::nanoseconds(1000));
-        stopLock.lock();
-        if (this->shouldStop) {
-            std::cout << "Send thread stopped" << "\n";
-            return;
-        }
-        stopLock.unlock();
+        std::this_thread::sleep_for (std::chrono::milliseconds(10));
+
         msgQueueLock.lock();
         std::vector<Msg> copiedMsgQueue = msgQueue;
-        // std::cout << "Send:" << msgQueue.size() << "\n";
         msgQueueLock.unlock();
-        // if (copiedMsgQueue.size()==0) {
-        //     std::cout << "Empty msqQueue" << "\n";
-        // }
+        if (copiedMsgQueue.size()==0) {
+            std::cout << "Empty msqQueue" << "\n";
+        }
         for (const auto wrapedMsg : copiedMsgQueue) {
-            // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiver);
+            struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiver);
             
-            struct sockaddr_in destaddr;
-            memset(&destaddr, 0, sizeof(destaddr));
-            destaddr.sin_family = AF_INET; //IPv4
-            destaddr.sin_addr.s_addr = wrapedMsg.receiver.ip;
-            destaddr.sin_port = wrapedMsg.receiver.port;
-            
-            std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
-            sentLock.lock();
+            // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
+            // sentLock.lock();
             sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
-            sentLock.unlock();
+            // sentLock.unlock();
+
             std::this_thread::sleep_for (std::chrono::milliseconds(10));
 
         }
@@ -148,13 +125,8 @@ void UDPSocket::receive() {
     // Reference: https://stackoverflow.com/questions/18670807/sending-and-receiving-stdstring-over-socket
     struct Msg wrapedMsg; 
     while (true) {
-        std::this_thread::sleep_for (std::chrono::nanoseconds(1000));
-        stopLock.lock();
-        if (this->shouldStop) {
-            std::cout << "Receive thread stopped" << "\n";
-            return;
-        }
-        stopLock.unlock();
+        std::this_thread::sleep_for (std::chrono::milliseconds(1));
+
         if (recv(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0) < 0) {
             throw std::runtime_error("Receive failed");
         } else {
@@ -173,7 +145,7 @@ void UDPSocket::receive() {
                 } else {
                     //otherwise, save it
                     receivedMsgs.push_back(wrapedMsg);
-                    std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
+                    // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
                     std::ostringstream oss;
                     oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.payload.content;
                     logsLock.lock();
@@ -181,26 +153,20 @@ void UDPSocket::receive() {
                     logsLock.unlock();
 
                     this->deliverCallBack(wrapedMsg);
-                    std::this_thread::sleep_for (std::chrono::nanoseconds(1000));
 
                     // std::cout<< "Received " << wrapedMsg.payload << " from "<< wrapedMsg.sender.id << "\n";
                 }    
+                std::this_thread::sleep_for (std::chrono::milliseconds(1));
                 // send Ack back to sender
                 wrapedMsg.is_ack = true;
-                // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.sender);
-            
-                struct sockaddr_in destaddr;
-                memset(&destaddr, 0, sizeof(destaddr));
-                destaddr.sin_family = AF_INET; //IPv4
-                destaddr.sin_addr.s_addr = wrapedMsg.sender.ip;
-                destaddr.sin_port = wrapedMsg.sender.port;
+                struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.sender);
                 
                 Parser::Host tempAddr = wrapedMsg.sender;
                 wrapedMsg.sender = this->localhost;
                 wrapedMsg.receiver = tempAddr;
-                sentLock.lock();
+                // sentLock.lock();
                 sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
-                sentLock.unlock();
+                // sentLock.unlock();
             }  
         }
     }

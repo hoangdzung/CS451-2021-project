@@ -26,7 +26,6 @@ static void stop(int) {
 
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
-  beb.stop();
 
   for(auto const &output: beb.getLogs()){
     outputFile << output << "\n" ;
@@ -114,6 +113,5 @@ int main(int argc, char **argv) {
     std::this_thread::sleep_for(std::chrono::hours(1));
   }
   // delete beb;  
-  beb.stop();
   return 0;
 }

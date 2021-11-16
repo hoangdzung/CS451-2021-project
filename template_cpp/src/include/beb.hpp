@@ -12,7 +12,6 @@ class BestEffortBroadcast {
         BestEffortBroadcast(const BestEffortBroadcast &);
         ~BestEffortBroadcast();
         void start();
-        void stop();
         void deliver(const Msg wrapedMsg);
         void selfDeliver(unsigned int msg);
         void broadcast(unsigned int msg, unsigned long seqNum=0);
