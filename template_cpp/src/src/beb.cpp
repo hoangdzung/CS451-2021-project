@@ -40,8 +40,9 @@ void BestEffortBroadcast::start() {
 void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
     std::ostringstream oss;
     oss << "b " << msg;
+    logsLock.lock();
     logs.push_back(oss.str());
-    for (auto host : this->networks) {
+    logsLock.unlock();    for (auto host : this->networks) {
         if (host.id == this->localhost.id) {
             selfDeliver(msg);
         } else {
@@ -53,8 +54,9 @@ void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
 void BestEffortBroadcast::broadcast(Payload msg) {
     std::ostringstream oss;
     oss << "b " << msg.content;
+    logsLock.lock();
     logs.push_back(oss.str());
-    for (auto host : this->networks) {
+    logsLock.unlock();    for (auto host : this->networks) {
         if (host.id == this->localhost.id) {
             selfDeliver(msg.content);
         } else {

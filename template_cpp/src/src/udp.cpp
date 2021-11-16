@@ -99,14 +99,14 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
 void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     while(true) {
-        std::this_thread::sleep_for (std::chrono::milliseconds(10));
+        // std::this_thread::sleep_for (std::chrono::milliseconds(10));
 
         msgQueueLock.lock();
         std::vector<Msg> copiedMsgQueue = msgQueue;
         msgQueueLock.unlock();
-        if (copiedMsgQueue.size()==0) {
-            std::cout << "Empty msqQueue" << "\n";
-        }
+        // if (copiedMsgQueue.size()==0) {
+        //     std::cout << "Empty msqQueue" << "\n";
+        // }
         for (const auto wrapedMsg : copiedMsgQueue) {
             struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiver);
             
@@ -115,7 +115,7 @@ void UDPSocket::send() {
             sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
             // sentLock.unlock();
 
-            std::this_thread::sleep_for (std::chrono::milliseconds(10));
+            // std::this_thread::sleep_for (std::chrono::milliseconds(10));
 
         }
     }
@@ -125,7 +125,7 @@ void UDPSocket::receive() {
     // Reference: https://stackoverflow.com/questions/18670807/sending-and-receiving-stdstring-over-socket
     struct Msg wrapedMsg; 
     while (true) {
-        std::this_thread::sleep_for (std::chrono::milliseconds(1));
+        // std::this_thread::sleep_for (std::chrono::milliseconds(1));
 
         if (recv(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0) < 0) {
             throw std::runtime_error("Receive failed");
@@ -156,7 +156,7 @@ void UDPSocket::receive() {
 
                     // std::cout<< "Received " << wrapedMsg.payload << " from "<< wrapedMsg.sender.id << "\n";
                 }    
-                std::this_thread::sleep_for (std::chrono::milliseconds(1));
+                // std::this_thread::sleep_for (std::chrono::milliseconds(1));
                 // send Ack back to sender
                 wrapedMsg.is_ack = true;
                 struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.sender);
