@@ -12,8 +12,8 @@ class AbstractLayer {
         
         // void deliver(Msg wrapedMsg) {
         //     std::ostringstream oss;
-        //     std::cout << this <<  " " << localhost.id << " d " << wrapedMsg.sender.id << " " << wrapedMsg.content << "\n";
-        //     oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
+        //     std::cout << this <<  " " << localhost.id << " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload << "\n";
+        //     oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
         //     logs.push_back(oss.str());
         // }
 

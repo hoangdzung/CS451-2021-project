@@ -1,5 +1,7 @@
 #include "beb.hpp"
 #include "udp.hpp"
+#include <thread>
+#include <chrono>
 
 BestEffortBroadcast::BestEffortBroadcast() {
     this->deliverCallBack = [](Msg msg) {};
@@ -34,18 +36,26 @@ BestEffortBroadcast::~BestEffortBroadcast() {
 
 void BestEffortBroadcast::start() {
     this->perfectLink = UDPSocket(this->localhost, [this](Msg msg){this->deliver(msg);});
+    // this->perfectLink = UDPSocket(this->localhost);
     this->perfectLink.start();
+}
+void BestEffortBroadcast::stop() {
+    this->perfectLink.stop();
+    std::this_thread::sleep_for (std::chrono::nanoseconds(1000));
+
 }
 
 void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
     std::ostringstream oss;
     oss << "b " << msg;
+    // logsLock.unlock();
     logs.push_back(oss.str());
+    // logsLock.unlock();    
     for (auto host : this->networks) {
         if (host.id == this->localhost.id) {
             selfDeliver(msg);
         } else {
-            this->perfectLink.putAndSend(host, msg, seqNum);  // broadcasting the message instead of just putting it in the queue  
+            this->perfectLink.put(host, msg, seqNum);  // broadcasting the message instead of just putting it in the queue  
         }
     }
 }
@@ -53,12 +63,14 @@ void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
 void BestEffortBroadcast::broadcast(Payload msg) {
     std::ostringstream oss;
     oss << "b " << msg.content;
+    // logsLock.unlock();
     logs.push_back(oss.str());
+    // logsLock.unlock();
     for (auto host : this->networks) {
         if (host.id == this->localhost.id) {
             selfDeliver(msg.content);
         } else {
-            this->perfectLink.putAndSend(host, msg);  // broadcasting the message instead of just putting it in the queue  
+            this->perfectLink.put(host, msg);  // broadcasting the message instead of just putting it in the queue  
         }
     }
 }
@@ -69,18 +81,21 @@ std::vector<std::string> BestEffortBroadcast::getLogs() {
 
 void BestEffortBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    std::cout << "Received " << wrapedMsg.content.content << " from " << wrapedMsg.content.id <<  "\n";
-    // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
-    oss << "d " << wrapedMsg.content.id << " " << wrapedMsg.content.content;
+    std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    oss << "d " << wrapedMsg.payload.id << " " << wrapedMsg.payload.content;
+    // logsLock.unlock();
     logs.push_back(oss.str());
+    // logsLock.unlock();
+
     this->deliverCallBack(wrapedMsg);
 }
 
 void BestEffortBroadcast::selfDeliver(unsigned int msg) {
     std::ostringstream oss;
     // std::cout << this <<  " " << localhost.id  << " self d " << localhost.id << " " << msg << "\n";
-    // oss << this << " self d " << localhost.id << " " << msg;
     oss << "d " << localhost.id << " " << msg;
+    // logsLock.unlock();
     logs.push_back(oss.str());
+    // logsLock.unlock();
 }
 

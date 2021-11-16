@@ -40,7 +40,7 @@ struct Msg {
     Parser::Host receiver;
     unsigned long msg_id;
     // unsigned int content;
-    Payload content; 
+    Payload payload; 
     bool is_ack;
     public:
     bool operator==( const Msg& other ) {

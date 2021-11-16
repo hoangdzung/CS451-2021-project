@@ -12,6 +12,7 @@
 #include <signal.h>
 
 std::ofstream outputFile;
+UDPSocket udp;
 BestEffortBroadcast beb;
 UniReliableBroadcast urb;
 
@@ -25,12 +26,12 @@ static void stop(int) {
 
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
+  beb.stop();
 
-  for(auto const &output: urb.getLogs()){
+  for(auto const &output: beb.getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
-  
   // exit directly from signal handler
   exit(0);
 }
@@ -86,26 +87,26 @@ int main(int argc, char **argv) {
 
   // config_file >> m >> i;
   // config_file.close();
-  // udpSocket = new UDPSocket(hosts[parser.id()-1]);
-  // udpSocket->start(); //if not seperate this, we have 2 untrackable socket
+  // udp = UDPSocket(hosts[parser.id()-1]);
+  // udp.start(); //if not seperate this, we have 2 untrackable socket
   // if (parser.id() != i) {
   //   for (unsigned int msg=1;msg<=m;msg ++) {
-  //     udpSocket->put(hosts[i-1], msg);      
+  //     udp.put(hosts[i-1], msg);      
   //   }
   // }
 
   config_file >> m;
   config_file.close();
-  // beb = BestEffortBroadcast(hosts[parser.id()-1], hosts);
-  // beb.start();
-  // for (unsigned int msg=1;msg<=m;msg ++) {
-  //   beb.broadcast(msg);      
-  // }
-  urb = UniReliableBroadcast(hosts[parser.id()-1], hosts);
-  urb.start();
+  beb = BestEffortBroadcast(hosts[parser.id()-1], hosts);
+  beb.start();
   for (unsigned int msg=1;msg<=m;msg ++) {
-    urb.broadcast(msg);      
+    beb.broadcast(msg);      
   }
+  // urb = UniReliableBroadcast(hosts[parser.id()-1], hosts);
+  // urb.start();
+  // for (unsigned int msg=1;msg<=m;msg ++) {
+  //   urb.broadcast(msg);      
+  // }
   // std::cout << "Done" << "\n";
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.
@@ -113,6 +114,6 @@ int main(int argc, char **argv) {
     std::this_thread::sleep_for(std::chrono::hours(1));
   }
   // delete beb;  
-
+  beb.stop();
   return 0;
 }

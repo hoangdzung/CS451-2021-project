@@ -12,7 +12,8 @@ class BestEffortBroadcast {
         BestEffortBroadcast(const BestEffortBroadcast &);
         ~BestEffortBroadcast();
         void start();
-        void deliver(Msg wrapedMsg);
+        void stop();
+        void deliver(const Msg wrapedMsg);
         void selfDeliver(unsigned int msg);
         void broadcast(unsigned int msg, unsigned long seqNum=0);
         void broadcast(Payload msg);
@@ -25,4 +26,6 @@ class BestEffortBroadcast {
         Parser::Host localhost;
         std::vector<Parser::Host> networks;
         UDPSocket perfectLink;
+        std::mutex logsLock;
+
 };

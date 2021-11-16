@@ -53,15 +53,25 @@ void UniReliableBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
 
 }
 
+void UniReliableBroadcast::broadcast(Payload payload) {
+    std::ostringstream oss;
+    oss << "b " << payload.content;
+    logs.push_back(oss.str());
+    this->bestEffortBroadcast.broadcast(payload);
+    this->addAck(payload);
+    pending.insert(payload);
+
+}
+
 std::vector<std::string> UniReliableBroadcast::getLogs() {
     return this->logs;
 } 
 
 void UniReliableBroadcast::addAck(Msg wrapedMsg) {
-    if (this->acks.find(wrapedMsg.content) != this->acks.end()) {
-        this->acks[wrapedMsg.content].insert(wrapedMsg.sender.id);
+    if (this->acks.find(wrapedMsg.payload) != this->acks.end()) {
+        this->acks[wrapedMsg.payload].insert(wrapedMsg.sender.id);
     } else {
-        this->acks.insert({wrapedMsg.content, std::unordered_set<unsigned long>({wrapedMsg.sender.id})});
+        this->acks.insert({wrapedMsg.payload, std::unordered_set<unsigned long>({wrapedMsg.sender.id})});
     }
 }
 
@@ -74,27 +84,27 @@ void UniReliableBroadcast::addAck(Payload msg) {
 }
 
 bool UniReliableBroadcast::isPending(Msg wrapedMsg) {
-    return this->pending.find(wrapedMsg.content) != this->pending.end();
+    return this->pending.find(wrapedMsg.payload) != this->pending.end();
 }
 
 bool UniReliableBroadcast::isDelivered(Msg wrapedMsg) {
-    return this->delivered.find(wrapedMsg.content) != this->delivered.end();
+    return this->delivered.find(wrapedMsg.payload) != this->delivered.end();
 }
 
 bool UniReliableBroadcast::canDeliver(Msg wrapedMsg) {
-    if (this->acks.find(wrapedMsg.content) != this->acks.end()) {
-        return this->acks[wrapedMsg.content].size() > this->networkSize /2;
+    if (this->acks.find(wrapedMsg.payload) != this->acks.end()) {
+        return this->acks[wrapedMsg.payload].size() > this->networkSize /2;
     } else {
         return false;
     }
 }
 
 void UniReliableBroadcast::receive(Msg wrapedMsg) {
-    std::cout << "Received (" << wrapedMsg.content.content << "," << wrapedMsg.content.id << ") from " << wrapedMsg.sender.id << "\n";
+    std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
     this->addAck(wrapedMsg);
     if (!isPending(wrapedMsg)) {
-        this->pending.insert(wrapedMsg.content);
-        this->bestEffortBroadcast.broadcast(wrapedMsg.content);
+        this->pending.insert(wrapedMsg.payload);
+        this->bestEffortBroadcast.broadcast(wrapedMsg.payload);
     }
     if (canDeliver(wrapedMsg) && !isDelivered(wrapedMsg)) {
         this->deliver(wrapedMsg);
@@ -102,11 +112,11 @@ void UniReliableBroadcast::receive(Msg wrapedMsg) {
 }
 
 void UniReliableBroadcast::deliver(Msg wrapedMsg) {
-    this->delivered.insert(wrapedMsg.content);
+    this->delivered.insert(wrapedMsg.payload);
     std::ostringstream oss;
-    std::cout << "Delivered " << wrapedMsg.content.content << " from " << wrapedMsg.content.id <<  "\n";
-    // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.content;
-    oss << "d " << wrapedMsg.content.content << " " << wrapedMsg.content.id;
+    std::cout << "Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
+    oss << "d " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id;
     logs.push_back(oss.str());
     this->deliverCallBack(wrapedMsg);
 }

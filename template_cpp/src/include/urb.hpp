@@ -19,6 +19,7 @@ class UniReliableBroadcast {
         void deliver(Msg wrapedMsg);
         void receive(Msg wrapedMsg);
         void broadcast(unsigned int msg, unsigned long seqNum=0);
+        void broadcast(Payload payload);
         std::vector<std::string> getLogs();
         UniReliableBroadcast& operator=(const UniReliableBroadcast & other);
     private:
