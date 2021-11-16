@@ -20,6 +20,7 @@ class BestEffortBroadcast {
         std::vector<std::string> getLogs();
         BestEffortBroadcast& operator=(const BestEffortBroadcast & other);
     private:
+        void writeLogs(std::string log);
         std::function<void(Msg)> deliverCallBack;
         std::vector<std::string> logs;
         Parser::Host localhost;

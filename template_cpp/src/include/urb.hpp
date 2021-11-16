@@ -23,9 +23,11 @@ class UniReliableBroadcast {
         std::vector<std::string> getLogs();
         UniReliableBroadcast& operator=(const UniReliableBroadcast & other);
     private:
+        void writeLogs(std::string log);
         std::function<void(Msg)> deliverCallBack;
         void addAck(Msg wrapedMsg);
-        void addAck(Payload msg);
+        void addAck(Payload msg,unsigned long senderId);
+        void addPending(Payload msg);
         bool isPending(Msg wrapedMsg);
         bool canDeliver(Msg wrapedMsg);
         bool isDelivered(Msg wrapedMsg);
@@ -42,4 +44,7 @@ class UniReliableBroadcast {
         Parser::Host localhost;
         std::vector<Parser::Host> networks;
         BestEffortBroadcast bestEffortBroadcast;
+        std::mutex logsLock;
+        std::mutex acksPendingLock;
+
 };

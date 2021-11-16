@@ -90,10 +90,7 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
 
     std::ostringstream oss;
     oss << "b " << msg.content;
-    logsLock.lock();
-    logs.push_back(oss.str());
-    logsLock.unlock();
-
+    this->writeLogs(oss.str());
 }
 
 void UDPSocket::send() {
@@ -148,9 +145,7 @@ void UDPSocket::receive() {
                     // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
                     std::ostringstream oss;
                     oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.payload.content;
-                    logsLock.lock();
-                    logs.push_back(oss.str());
-                    logsLock.unlock();
+                    this->writeLogs(oss.str());
 
                     this->deliverCallBack(wrapedMsg);
 
@@ -187,6 +182,12 @@ int UDPSocket::setupSocket(Parser::Host host) {
         throw std::runtime_error("Bind failed");
     }
     return sockfd;
+}
+
+void UDPSocket::writeLogs(std::string log) {
+    this->logsLock.lock();
+    this->logs.push_back(log);
+    this->logsLock.unlock();
 }
 
 std::vector<std::string> UDPSocket::getLogs() {

@@ -27,7 +27,7 @@ static void stop(int) {
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
 
-  for(auto const &output: beb.getLogs()){
+  for(auto const &output: urb.getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
@@ -96,16 +96,16 @@ int main(int argc, char **argv) {
 
   config_file >> m;
   config_file.close();
-  beb = BestEffortBroadcast(hosts[parser.id()-1], hosts);
-  beb.start();
-  for (unsigned int msg=1;msg<=m;msg ++) {
-    beb.broadcast(msg);      
-  }
-  // urb = UniReliableBroadcast(hosts[parser.id()-1], hosts);
-  // urb.start();
+  // beb = BestEffortBroadcast(hosts[parser.id()-1], hosts);
+  // beb.start();
   // for (unsigned int msg=1;msg<=m;msg ++) {
-  //   urb.broadcast(msg);      
+  //   beb.broadcast(msg);      
   // }
+  urb = UniReliableBroadcast(hosts[parser.id()-1], hosts);
+  urb.start();
+  for (unsigned int msg=1;msg<=m;msg ++) {
+    urb.broadcast(msg);      
+  }
   // std::cout << "Done" << "\n";
   // After a process finishes broadcasting,
   // it waits forever for the delivery of messages.

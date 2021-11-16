@@ -45,22 +45,25 @@ void UniReliableBroadcast::start() {
 void UniReliableBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
     std::ostringstream oss;
     oss << "b " << msg;
-    logs.push_back(oss.str());
+    this->writeLogs(oss.str());
     Payload extendMsg = this->addSelfHost(msg, seqNum);
     this->bestEffortBroadcast.broadcast(extendMsg);
-    this->addAck(extendMsg);
-    pending.insert(extendMsg);
+    this->acksPendingLock.lock();
+    this->addAck(extendMsg, this->localhost.id);
+    this->addPending(extendMsg);
+    this->acksPendingLock.unlock();
 
 }
 
 void UniReliableBroadcast::broadcast(Payload payload) {
     std::ostringstream oss;
     oss << "b " << payload.content;
-    logs.push_back(oss.str());
+    this->writeLogs(oss.str());
     this->bestEffortBroadcast.broadcast(payload);
-    this->addAck(payload);
-    pending.insert(payload);
-
+    this->acksPendingLock.lock();
+    this->addAck(payload, this->localhost.id);
+    this->addPending(payload);
+    this->acksPendingLock.unlock();
 }
 
 std::vector<std::string> UniReliableBroadcast::getLogs() {
@@ -68,6 +71,7 @@ std::vector<std::string> UniReliableBroadcast::getLogs() {
 } 
 
 void UniReliableBroadcast::addAck(Msg wrapedMsg) {
+    // std::cout << "addAck " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id << " from " << wrapedMsg.sender.id << "\n";
     if (this->acks.find(wrapedMsg.payload) != this->acks.end()) {
         this->acks[wrapedMsg.payload].insert(wrapedMsg.sender.id);
     } else {
@@ -75,12 +79,17 @@ void UniReliableBroadcast::addAck(Msg wrapedMsg) {
     }
 }
 
-void UniReliableBroadcast::addAck(Payload msg) {
+void UniReliableBroadcast::addAck(Payload msg,unsigned long senderId) {
+    // std::cout << "addAck " << msg.content << " " << msg.id << " from " << senderId << "\n";
     if (this->acks.find(msg) != this->acks.end()) {
-        this->acks[msg].insert(msg.id);
+        this->acks[msg].insert(senderId);
     } else {
-        this->acks.insert({msg, std::unordered_set<unsigned long>({msg.id})});
+        this->acks.insert({msg, std::unordered_set<unsigned long>({senderId})});
     }
+}
+
+void UniReliableBroadcast::addPending(Payload payload) {
+    this->pending.insert(payload);
 }
 
 bool UniReliableBroadcast::isPending(Msg wrapedMsg) {
@@ -100,13 +109,30 @@ bool UniReliableBroadcast::canDeliver(Msg wrapedMsg) {
 }
 
 void UniReliableBroadcast::receive(Msg wrapedMsg) {
-    std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
+    // std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
+    bool shouldBroadcast = false; // Use this to avoid deadlock
+    bool shouldDeliver = false; // Use this to avoid deadlock
+    this->acksPendingLock.lock();
     this->addAck(wrapedMsg);
     if (!isPending(wrapedMsg)) {
-        this->pending.insert(wrapedMsg.payload);
+        this->addAck(wrapedMsg.payload, this->localhost.id);
+        this->addPending(wrapedMsg.payload);
+        shouldBroadcast = true;
+    }
+    this->acksPendingLock.unlock();
+
+    if (shouldBroadcast) {
+        // std::cout <<"Relay " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id << " from " << this->localhost.id << "\n";
         this->bestEffortBroadcast.broadcast(wrapedMsg.payload);
     }
+
+    this->acksPendingLock.lock();
     if (canDeliver(wrapedMsg) && !isDelivered(wrapedMsg)) {
+        shouldDeliver = true;
+    }
+    this->acksPendingLock.unlock();
+
+    if (shouldDeliver) {
         this->deliver(wrapedMsg);
     }
 }
@@ -117,7 +143,7 @@ void UniReliableBroadcast::deliver(Msg wrapedMsg) {
     std::cout << "Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
     oss << "d " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id;
-    logs.push_back(oss.str());
+    this->writeLogs(oss.str());
     this->deliverCallBack(wrapedMsg);
 }
 
@@ -126,4 +152,9 @@ Payload UniReliableBroadcast::addSelfHost(unsigned int msg, unsigned long seqNum
     return Payload({this->localhost.id, msg, seqNum});
 }
 
+void UniReliableBroadcast::writeLogs(std::string log) {
+    this->logsLock.lock();
+    this->logs.push_back(log);
+    this->logsLock.unlock();
+}
 

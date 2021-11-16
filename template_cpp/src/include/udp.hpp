@@ -23,6 +23,7 @@ class UDPSocket {
         UDPSocket& operator=(const UDPSocket & other);
 
     private:
+        void writeLogs(std::string log);
         Parser::Host localhost;
         std::function<void(Msg)> deliverCallBack;
 

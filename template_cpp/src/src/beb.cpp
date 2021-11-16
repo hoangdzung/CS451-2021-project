@@ -40,9 +40,9 @@ void BestEffortBroadcast::start() {
 void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
     std::ostringstream oss;
     oss << "b " << msg;
-    logsLock.lock();
-    logs.push_back(oss.str());
-    logsLock.unlock();    for (auto host : this->networks) {
+    this->writeLogs(oss.str());
+    
+    for (auto host : this->networks) {
         if (host.id == this->localhost.id) {
             selfDeliver(msg);
         } else {
@@ -54,9 +54,8 @@ void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
 void BestEffortBroadcast::broadcast(Payload msg) {
     std::ostringstream oss;
     oss << "b " << msg.content;
-    logsLock.lock();
-    logs.push_back(oss.str());
-    logsLock.unlock();    for (auto host : this->networks) {
+    this->writeLogs(oss.str());   
+    for (auto host : this->networks) {
         if (host.id == this->localhost.id) {
             selfDeliver(msg.content);
         } else {
@@ -71,11 +70,9 @@ std::vector<std::string> BestEffortBroadcast::getLogs() {
 
 void BestEffortBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
     oss << "d " << wrapedMsg.payload.id << " " << wrapedMsg.payload.content;
-    logsLock.lock();
-    logs.push_back(oss.str());
-    logsLock.unlock();
+    this->writeLogs(oss.str());
 
     this->deliverCallBack(wrapedMsg);
 }
@@ -83,8 +80,12 @@ void BestEffortBroadcast::deliver(Msg wrapedMsg) {
 void BestEffortBroadcast::selfDeliver(unsigned int msg) {
     std::ostringstream oss;
     oss << "d " << localhost.id << " " << msg;
-    logsLock.lock();
-    logs.push_back(oss.str());
-    logsLock.unlock();
+    this->writeLogs(oss.str());
+    
 }
 
+void BestEffortBroadcast::writeLogs(std::string log) {
+    this->logsLock.lock();
+    this->logs.push_back(log);
+    this->logsLock.unlock();
+}
