@@ -7,16 +7,18 @@
 // Reference: https://www.geeksforgeeks.org/udp-server-client-implementation-c/
 
 UDPSocket::UDPSocket() {
-    this->deliverCallBack = [](Msg msg) {std::cout << "Callback Received " << msg.payload.content << " from " << msg.sender.id <<  " " << &msg << "\n";};
+    this->deliverCallBack = [](Msg msg) {};
 }
-UDPSocket::UDPSocket(Parser::Host localhost) {
+UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks) {
     this->localhost = localhost;
-    this->deliverCallBack = [](Msg msg) {std::cout << "Callback Received " << msg.payload.content << " from " << msg.sender.id <<  " " << &msg << "\n";};
+    this->networks = networks;
+    this->deliverCallBack = [](Msg msg) {};
     msg_id = 0;
 }
 
-UDPSocket::UDPSocket(Parser::Host localhost, std::function<void(Msg)> deliverCallBack) {
+UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack) {
     this->localhost = localhost;
+    this->networks = networks;
     this->deliverCallBack = deliverCallBack;
     msg_id = 0;
 }
@@ -32,6 +34,7 @@ void UDPSocket::start() {
 UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
     this->logs = other.logs;
     this->localhost = other.localhost;
+    this->networks = other.networks;
     this->deliverCallBack = other.deliverCallBack;
     this->sockfd = other.sockfd;
     this->msg_id = other.msg_id;
@@ -40,20 +43,20 @@ UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
     return *this;
 }
 
-struct sockaddr_in UDPSocket::setUpDestAddr(Parser::Host dest) {
+struct sockaddr_in UDPSocket::setUpDestAddr(unsigned long destId) {
     struct sockaddr_in destaddr;
     memset(&destaddr, 0, sizeof(destaddr));
     destaddr.sin_family = AF_INET; //IPv4
-    destaddr.sin_addr.s_addr = dest.ip;
-    destaddr.sin_port = dest.port;
+    destaddr.sin_addr.s_addr = this->networks[destId-1].ip;
+    destaddr.sin_port = this->networks[destId-1].port;
     return destaddr;
 }
 
 void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {    
     // struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
-        this->localhost,
-        dest,
+        this->localhost.id,
+        dest.id,
         msg_id,
         // std::make_pair(this->localhost.id, msg),
         Payload ({this->localhost.id, msg, seqNum}),
@@ -76,8 +79,8 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {
 void UDPSocket::put(Parser::Host dest, Payload msg) {    
     // struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Msg wrapedMsg = {
-        this->localhost,
-        dest,
+        this->localhost.id,
+        dest.id,
         msg_id,
         msg,
         false
@@ -105,7 +108,7 @@ void UDPSocket::send() {
         //     std::cout << "Empty msqQueue" << "\n";
         // }
         for (const auto wrapedMsg : copiedMsgQueue) {
-            struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiver);
+            struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
             
             // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
             // sentLock.lock();
@@ -146,7 +149,7 @@ void UDPSocket::receive() {
                     // std::cout << "PL Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
 
                     std::ostringstream oss;
-                    oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.payload.content;
+                    oss << "d " << wrapedMsg.senderId << " " << wrapedMsg.payload.content;
                     this->writeLogs(oss.str());
 
                     this->deliverCallBack(wrapedMsg);
@@ -156,11 +159,11 @@ void UDPSocket::receive() {
                 // std::this_thread::sleep_for (std::chrono::milliseconds(1));
                 // send Ack back to sender
                 wrapedMsg.is_ack = true;
-                struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.sender);
+                struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.senderId);
                 
-                Parser::Host tempAddr = wrapedMsg.sender;
-                wrapedMsg.sender = this->localhost;
-                wrapedMsg.receiver = tempAddr;
+                host_id_type tempAddr = wrapedMsg.senderId;
+                wrapedMsg.senderId = this->localhost.id;
+                wrapedMsg.receiverId = tempAddr;
                 // sentLock.lock();
                 sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
                 // sentLock.unlock();

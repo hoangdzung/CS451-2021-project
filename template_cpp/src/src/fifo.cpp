@@ -50,12 +50,12 @@ std::vector<std::string> FIFOBroadcast::getLogs() {
 } 
 
 void FIFOBroadcast::receive(Msg wrapedMsg) {
-    std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
+    // std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.senderId << "\n";
     // this->pendingLock.lock();
     auto pendingIt = this->pendings.find(wrapedMsg.payload.id);
     auto nextIt = this->next.find(wrapedMsg.payload.id);
     if ((pendingIt != this->pendings.end()) && (nextIt != this->next.end())) {
-        std::cout << nextIt->first << ":" << nextIt->second << "\n";
+        // std::cout << nextIt->first << ":" << nextIt->second << "\n";
         pendingIt->second.push(wrapedMsg.payload);
         while (!(pendingIt->second.empty())) {
             if (pendingIt->second.top().seqNum == nextIt->second) {

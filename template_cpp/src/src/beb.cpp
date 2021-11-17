@@ -33,7 +33,7 @@ BestEffortBroadcast::~BestEffortBroadcast() {
 }
 
 void BestEffortBroadcast::start() {
-    this->perfectLink = UDPSocket(this->localhost, [this](Msg msg){this->deliver(msg);});
+    this->perfectLink = UDPSocket(this->localhost, this->networks, [this](Msg msg){this->deliver(msg);});
     this->perfectLink.start();
 }
 

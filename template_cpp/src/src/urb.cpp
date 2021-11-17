@@ -85,9 +85,9 @@ std::vector<std::string> UniReliableBroadcast::getLogs() {
 void UniReliableBroadcast::addAck(Msg wrapedMsg) {
     // std::cout << "addAck " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id << " from " << wrapedMsg.sender.id << "\n";
     if (this->acks.find(wrapedMsg.payload) != this->acks.end()) {
-        this->acks[wrapedMsg.payload].insert(wrapedMsg.sender.id);
+        this->acks[wrapedMsg.payload].insert(wrapedMsg.senderId);
     } else {
-        this->acks.insert({wrapedMsg.payload, std::unordered_set<unsigned long>({wrapedMsg.sender.id})});
+        this->acks.insert({wrapedMsg.payload, std::unordered_set<unsigned long>({wrapedMsg.senderId})});
     }
 }
 

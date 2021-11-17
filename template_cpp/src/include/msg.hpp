@@ -4,7 +4,7 @@
 #include <array>
 
 // typedef std::pair<unsigned long, unsigned int> host_msg_type;
-
+typedef unsigned long host_id_type;
 struct pair_hash {
     template <class T1, class T2>
     std::size_t operator () (const std::pair<T1,T2> &p) const {
@@ -39,8 +39,8 @@ struct Payload {
 // }
 
 struct Msg {
-    Parser::Host sender;
-    Parser::Host receiver;
+    host_id_type senderId;
+    host_id_type receiverId;
     unsigned long msg_id;
     // unsigned int content;
     Payload payload; 
@@ -48,22 +48,18 @@ struct Msg {
     public:
     bool operator==( const Msg& other ) {
         if (other.is_ack) 
-            return sender.ip == other.receiver.ip &&
-                    sender.port == other.receiver.port &&
-                    receiver.ip == other.sender.ip &&
-                    receiver.port == other.sender.port &&
+            return senderId == other.receiverId &&
+                    receiverId == other.senderId &&
                     msg_id == other.msg_id;
         else
-            return sender.ip == other.sender.ip &&
-                    sender.port == other.sender.port &&
-                    receiver.ip == other.receiver.ip &&
-                    receiver.port == other.receiver.port &&
+            return senderId == other.senderId &&
+                    receiverId == other.receiverId &&
                     msg_id == other.msg_id;
     }
 };
 
 struct hash_custom {
   size_t operator()(const Payload & x) const {
-    return std::hash<long unsigned int>()(x.id) ^ std::hash< unsigned int>()(x.content) ^ std::hash<long unsigned int>()(x.seqNum);
+    return std::hash<host_id_type>()(x.id) ^ std::hash< unsigned int>()(x.content) ^ std::hash<long unsigned int>()(x.seqNum);
   }
 };

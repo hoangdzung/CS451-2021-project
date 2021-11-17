@@ -12,8 +12,8 @@
 class UDPSocket {
     public:
         UDPSocket();
-        UDPSocket(Parser::Host localhost);
-        UDPSocket(Parser::Host localhost, std::function<void(Msg)> deliverCallBack);
+        UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks);
+        UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack);
         UDPSocket(const UDPSocket &);
         // bool UDPSocket& operator=(const UDPSocket&);
         void start();
@@ -25,6 +25,7 @@ class UDPSocket {
     private:
         void writeLogs(std::string log);
         Parser::Host localhost;
+        std::vector<Parser::Host> networks;
         std::function<void(Msg)> deliverCallBack;
 
         std::vector<std::string> logs;
@@ -37,7 +38,7 @@ class UDPSocket {
 
         std::vector<Msg> receivedMsgs;
         int setupSocket(Parser::Host host);
-        struct sockaddr_in setUpDestAddr(Parser::Host dest);
+        struct sockaddr_in setUpDestAddr(host_id_type destId);
         void send();
         void receive();
 };
