@@ -4,35 +4,32 @@
 #include <utility> 
 
 UniReliableBroadcast::UniReliableBroadcast() {
-    std::cout <<1 <<"\n";
     this->networkSize = 0;
     this->deliverCallBack = [](Msg msg) {std::cout <<"test1\n";};
 }
 
 UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks) {
-    std::cout <<2 <<"\n";
     this->localhost = localhost;
     this->networks = networks;
     this->networkSize = networks.size();
     this->deliverCallBack = [](Msg msg) {std::cout <<"test2\n";};
-    this->networks.erase(
-        std::remove_if(this->networks.begin(), this->networks.end(),
-        [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
-        this->networks.end()
-    );
+    // this->networks.erase(
+    //     std::remove_if(this->networks.begin(), this->networks.end(),
+    //     [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
+    //     this->networks.end()
+    // );
 }
 
 UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack) {
-    std::cout <<3 <<"\n";
     this->localhost = localhost;
     this->networks = networks;
     this->networkSize = networks.size();
     this->deliverCallBack = deliverCallBack;
-    this->networks.erase(
-        std::remove_if(this->networks.begin(), this->networks.end(),
-        [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
-        this->networks.end()
-    );
+    // this->networks.erase(
+    //     std::remove_if(this->networks.begin(), this->networks.end(),
+    //     [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
+    //     this->networks.end()
+    // );
 }
 
 UniReliableBroadcast& UniReliableBroadcast::operator=(const UniReliableBroadcast & other) {
