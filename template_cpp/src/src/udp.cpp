@@ -143,6 +143,8 @@ void UDPSocket::receive() {
                     //otherwise, save it
                     receivedMsgs.push_back(wrapedMsg);
                     // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
+                    // std::cout << "PL Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+
                     std::ostringstream oss;
                     oss << "d " << wrapedMsg.sender.id << " " << wrapedMsg.payload.content;
                     this->writeLogs(oss.str());

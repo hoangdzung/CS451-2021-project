@@ -4,15 +4,17 @@
 #include <utility> 
 
 UniReliableBroadcast::UniReliableBroadcast() {
+    std::cout <<1 <<"\n";
     this->networkSize = 0;
-    this->deliverCallBack = [](Msg msg) {};
+    this->deliverCallBack = [](Msg msg) {std::cout <<"test1\n";};
 }
 
 UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks) {
+    std::cout <<2 <<"\n";
     this->localhost = localhost;
     this->networks = networks;
     this->networkSize = networks.size();
-    this->deliverCallBack = [](Msg msg) {};
+    this->deliverCallBack = [](Msg msg) {std::cout <<"test2\n";};
     this->networks.erase(
         std::remove_if(this->networks.begin(), this->networks.end(),
         [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
@@ -21,6 +23,7 @@ UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<P
 }
 
 UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack) {
+    std::cout <<3 <<"\n";
     this->localhost = localhost;
     this->networks = networks;
     this->networkSize = networks.size();
@@ -40,7 +43,7 @@ UniReliableBroadcast& UniReliableBroadcast::operator=(const UniReliableBroadcast
     this->delivered = other.delivered;
     this->acks = other.acks;
     this->logs = other.logs;
-    this->deliverCallBack = deliverCallBack;
+    this->deliverCallBack = other.deliverCallBack;
 
     return *this;
 }
@@ -152,11 +155,11 @@ void UniReliableBroadcast::receive(Msg wrapedMsg) {
 void UniReliableBroadcast::deliver(Msg wrapedMsg) {
     this->delivered.insert(wrapedMsg.payload);
     std::ostringstream oss;
-    std::cout << "Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
-    // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
+    // std::cout << "URB Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
     oss << "d " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id;
     this->writeLogs(oss.str());
     this->deliverCallBack(wrapedMsg);
+
 }
 
 Payload UniReliableBroadcast::addSelfHost(unsigned int msg, unsigned long seqNum) {

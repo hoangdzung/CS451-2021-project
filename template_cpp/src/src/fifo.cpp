@@ -20,6 +20,7 @@ FIFOBroadcast& FIFOBroadcast::operator=(const FIFOBroadcast & other) {
     this->localhost = other.localhost;
     this->networks = other.networks;
     this->lsn = other.lsn;
+    this->next = other.next;
     this->pendings = other.pendings;
     this->logs = other.logs;
 
@@ -49,17 +50,20 @@ std::vector<std::string> FIFOBroadcast::getLogs() {
 } 
 
 void FIFOBroadcast::receive(Msg wrapedMsg) {
-    // std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
+    std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
     // this->pendingLock.lock();
     auto pendingIt = this->pendings.find(wrapedMsg.payload.id);
     auto nextIt = this->next.find(wrapedMsg.payload.id);
     if ((pendingIt != this->pendings.end()) && (nextIt != this->next.end())) {
+        std::cout << nextIt->first << ":" << nextIt->second << "\n";
         pendingIt->second.push(wrapedMsg.payload);
         while (!(pendingIt->second.empty())) {
             if (pendingIt->second.top().seqNum == nextIt->second) {
                 nextIt->second++;
                 this->deliver(pendingIt->second.top());
                 pendingIt->second.pop();
+            } else {
+                break;
             }
         }
     }
@@ -68,17 +72,17 @@ void FIFOBroadcast::receive(Msg wrapedMsg) {
 
 void FIFOBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    std::cout << "Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    std::cout << "FIFO Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
-    oss << "d " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id;
+    oss << "d " << wrapedMsg.payload.id << " " << wrapedMsg.payload.content;
     this->writeLogs(oss.str());
 }
 
 void FIFOBroadcast::deliver(Payload payload) {
     std::ostringstream oss;
-    std::cout << "Delivered " << payload.content << " from " << payload.id <<  "\n";
+    std::cout << "FIFO Delivered " << payload.content << " from " << payload.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
-    oss << "d " << payload.content << " " << payload.id;
+    oss << "d " << payload.id << " " << payload.content;
     this->writeLogs(oss.str());
 }
 

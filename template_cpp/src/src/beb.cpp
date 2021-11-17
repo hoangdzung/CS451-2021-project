@@ -70,7 +70,7 @@ std::vector<std::string> BestEffortBroadcast::getLogs() {
 
 void BestEffortBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    // std::cout << "BEB Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
     oss << "d " << wrapedMsg.payload.id << " " << wrapedMsg.payload.content;
     this->writeLogs(oss.str());
 
