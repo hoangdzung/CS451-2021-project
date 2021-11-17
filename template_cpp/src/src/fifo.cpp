@@ -72,7 +72,7 @@ void FIFOBroadcast::receive(Msg wrapedMsg) {
 
 void FIFOBroadcast::deliver(Msg wrapedMsg) {
     std::ostringstream oss;
-    std::cout << "FIFO Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    // std::cout << "FIFO Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
     oss << "d " << wrapedMsg.payload.id << " " << wrapedMsg.payload.content;
     this->writeLogs(oss.str());
@@ -80,7 +80,7 @@ void FIFOBroadcast::deliver(Msg wrapedMsg) {
 
 void FIFOBroadcast::deliver(Payload payload) {
     std::ostringstream oss;
-    std::cout << "FIFO Delivered " << payload.content << " from " << payload.id <<  "\n";
+    // std::cout << "FIFO Delivered " << payload.content << " from " << payload.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
     oss << "d " << payload.id << " " << payload.content;
     this->writeLogs(oss.str());
