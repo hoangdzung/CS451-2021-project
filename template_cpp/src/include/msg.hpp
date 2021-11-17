@@ -27,6 +27,9 @@ struct Payload {
                 content == other.content &&
                 seqNum == other.seqNum;
     }
+    bool operator <(const Payload& other) const {
+        return seqNum > other.seqNum; //to get the smallest one first
+    }
 };
 
 // bool operator==(const Payload& left, const Payload& right) {

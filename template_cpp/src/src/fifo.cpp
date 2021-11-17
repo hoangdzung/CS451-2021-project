@@ -10,18 +10,17 @@ FIFOBroadcast::FIFOBroadcast(Parser::Host localhost, std::vector<Parser::Host> n
     this->localhost = localhost;
     this->networks = networks;
     this->lsn = 0;
-    // this->networks.erase(
-    //     std::remove_if(this->networks.begin(), this->networks.end(),
-    //     [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
-    //     this->networks.end()
-    // );
+    for (const auto host : networks) {
+        this->next.insert({host.id, 1});
+        this->pendings.insert({host.id, std::priority_queue<Payload>()});
+    }
 }
 
 FIFOBroadcast& FIFOBroadcast::operator=(const FIFOBroadcast & other) {
     this->localhost = other.localhost;
     this->networks = other.networks;
     this->lsn = other.lsn;
-    this->pending = other.pending;
+    this->pendings = other.pendings;
     this->logs = other.logs;
 
     return *this;
@@ -39,11 +38,10 @@ void FIFOBroadcast::start() {
 void FIFOBroadcast::broadcast(unsigned int msg) {
     std::ostringstream oss;
     oss << "b " << msg;
-    logs.push_back(oss.str());
+    this->writeLogs(oss.str());
+    this->lsn += 1;
     Payload extendMsg = this->addSelfHost(msg, this->lsn);
     this->uniReliableBroadcast.broadcast(extendMsg);
-    pending.insert(extendMsg);
-
 }
 
 std::vector<std::string> FIFOBroadcast::getLogs() {
@@ -51,8 +49,21 @@ std::vector<std::string> FIFOBroadcast::getLogs() {
 } 
 
 void FIFOBroadcast::receive(Msg wrapedMsg) {
-    std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
-    this->pending.insert(wrapedMsg.payload);
+    // std::cout << "Received (" << wrapedMsg.payload.content << "," << wrapedMsg.payload.id << ") from " << wrapedMsg.sender.id << "\n";
+    // this->pendingLock.lock();
+    auto pendingIt = this->pendings.find(wrapedMsg.payload.id);
+    auto nextIt = this->next.find(wrapedMsg.payload.id);
+    if ((pendingIt != this->pendings.end()) && (nextIt != this->next.end())) {
+        pendingIt->second.push(wrapedMsg.payload);
+        while (!(pendingIt->second.empty())) {
+            if (pendingIt->second.top().seqNum == nextIt->second) {
+                nextIt->second++;
+                this->deliver(pendingIt->second.top());
+                pendingIt->second.pop();
+            }
+        }
+    }
+    // this->pendingLock.unlock();    
 }
 
 void FIFOBroadcast::deliver(Msg wrapedMsg) {
@@ -60,7 +71,15 @@ void FIFOBroadcast::deliver(Msg wrapedMsg) {
     std::cout << "Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
     // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
     oss << "d " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id;
-    logs.push_back(oss.str());
+    this->writeLogs(oss.str());
+}
+
+void FIFOBroadcast::deliver(Payload payload) {
+    std::ostringstream oss;
+    std::cout << "Delivered " << payload.content << " from " << payload.id <<  "\n";
+    // oss << this <<  " d " << wrapedMsg.sender.id << " " << wrapedMsg.payload;
+    oss << "d " << payload.content << " " << payload.id;
+    this->writeLogs(oss.str());
 }
 
 Payload FIFOBroadcast::addSelfHost(unsigned int msg, unsigned long seqNum) {
@@ -68,3 +87,8 @@ Payload FIFOBroadcast::addSelfHost(unsigned int msg, unsigned long seqNum) {
     return Payload({this->localhost.id, msg, seqNum});
 }
 
+void FIFOBroadcast::writeLogs(std::string log) {
+    this->logsLock.lock();
+    this->logs.push_back(log);
+    this->logsLock.unlock();
+}

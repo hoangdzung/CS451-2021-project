@@ -8,6 +8,7 @@
 #include "udp.hpp"
 #include "beb.hpp"
 #include "urb.hpp"
+#include "fifo.hpp"
 #include "hello.h"
 #include <signal.h>
 
@@ -15,6 +16,7 @@ std::ofstream outputFile;
 UDPSocket udp;
 BestEffortBroadcast beb;
 UniReliableBroadcast urb;
+FIFOBroadcast fifo;
 
 static void stop(int) {
   // reset signal handlers to default
@@ -27,7 +29,7 @@ static void stop(int) {
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
 
-  for(auto const &output: urb.getLogs()){
+  for(auto const &output: fifo.getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
@@ -101,10 +103,15 @@ int main(int argc, char **argv) {
   // for (unsigned int msg=1;msg<=m;msg ++) {
   //   beb.broadcast(msg);      
   // }
-  urb = UniReliableBroadcast(hosts[parser.id()-1], hosts);
-  urb.start();
+  // urb = UniReliableBroadcast(hosts[parser.id()-1], hosts);
+  // urb.start();
+  // for (unsigned int msg=1;msg<=m;msg ++) {
+  //   urb.broadcast(msg);      
+  // }
+  fifo = FIFOBroadcast(hosts[parser.id()-1], hosts);
+  fifo.start();
   for (unsigned int msg=1;msg<=m;msg ++) {
-    urb.broadcast(msg);      
+    fifo.broadcast(msg);      
   }
   // std::cout << "Done" << "\n";
   // After a process finishes broadcasting,

@@ -20,6 +20,18 @@ UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<P
     );
 }
 
+UniReliableBroadcast::UniReliableBroadcast(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack) {
+    this->localhost = localhost;
+    this->networks = networks;
+    this->networkSize = networks.size();
+    this->deliverCallBack = deliverCallBack;
+    this->networks.erase(
+        std::remove_if(this->networks.begin(), this->networks.end(),
+        [localhost](const Parser::Host & o) { return o.id == localhost.id; }),
+        this->networks.end()
+    );
+}
+
 UniReliableBroadcast& UniReliableBroadcast::operator=(const UniReliableBroadcast & other) {
     this->localhost = other.localhost;
     this->networks = other.networks;
