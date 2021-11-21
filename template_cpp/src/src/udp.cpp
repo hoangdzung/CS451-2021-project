@@ -15,6 +15,7 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks)
     this->deliverCallBack = [](Msg msg) {};
     msg_id = 0;
     nSend = 100;
+    nPrevSend = 100;
     nReceive = 0;
 }
 
@@ -24,6 +25,7 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks,
     this->deliverCallBack = deliverCallBack;
     msg_id = 0;
     nSend = 100;
+    nPrevSend = 100;
     nReceive = 0;
 }
 
@@ -43,6 +45,7 @@ UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
     this->sockfd = other.sockfd;
     this->msg_id = other.msg_id;
     this->nSend = other.nSend;
+    this->nPrevSend = other.nPrevSend;
     this->nReceive = other.nReceive;
     this->msgQueue = other.msgQueue;
     this->receivedMsgs = other.receivedMsgs;
@@ -122,9 +125,12 @@ void UDPSocket::send() {
         std::vector<Msg> copiedMsgQueue;
         // std::cout << "NReceive:" << nReceive << "\n";
         if (nReceive ==0) {
-            nSend += 100;
+            nPrevSend = nSend;
+            nSend +=100;
             // std::cout << "Nsend:" << nSend << "\n";
-        } 
+        } else {
+            nSend = nPrevSend;
+        }
         nReceive = 0;
         if (msgQueue.size()>nSend) {
             std::partial_sort (msgQueue.begin(), msgQueue.begin()+nSend, msgQueue.end());

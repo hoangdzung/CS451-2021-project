@@ -25,6 +25,7 @@ class UDPSocket {
 
     private:
         unsigned long nSend;
+        unsigned long nPrevSend;
         unsigned long nReceive;
         void writeLogs(std::string log);
         Parser::Host localhost;
