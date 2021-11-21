@@ -63,11 +63,11 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {
         false
         };
     msg_id++;
-    struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
+    // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
     
-    // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
-    // sentLock.lock();
-    sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+    // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
+    // // sentLock.lock();
+    // sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
     msgQueueLock.lock();
     // std::cout << "Put msg " << wrapedMsg.payload << " to " <<wrapedMsg.receiver.id << "\n";
     msgQueue.push_back(wrapedMsg);
@@ -91,11 +91,11 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
         false
         };
     msg_id++;
-    struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
+    // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
     
-    // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
-    // sentLock.lock();
-    sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+    // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
+    // // sentLock.lock();
+    // sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
     msgQueueLock.lock();
     // std::cout << "Put msg " << wrapedMsg.payload << " to " <<wrapedMsg.receiver.id << "\n";
     msgQueue.push_back(wrapedMsg);
@@ -115,9 +115,9 @@ void UDPSocket::send() {
         // std::set<Msg> copiedMsgQueue = msgQueue;
         std::vector<Msg> copiedMsgQueue;
         
-        if (msgQueue.size()>1000) {
-            std::partial_sort (msgQueue.begin(), msgQueue.begin()+1000, msgQueue.end());
-            copiedMsgQueue = std::vector<Msg>{msgQueue.begin(),std::next(msgQueue.begin(),1000)};
+        if (msgQueue.size()>100) {
+            std::partial_sort (msgQueue.begin(), msgQueue.begin()+100, msgQueue.end());
+            copiedMsgQueue = std::vector<Msg>{msgQueue.begin(),std::next(msgQueue.begin(),100)};
         } else {
             sort(msgQueue.begin(), msgQueue.end());
             copiedMsgQueue = msgQueue;

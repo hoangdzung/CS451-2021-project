@@ -24,6 +24,7 @@ class UDPSocket {
         UDPSocket& operator=(const UDPSocket & other);
 
     private:
+        unsigned long temp;
         void writeLogs(std::string log);
         Parser::Host localhost;
         std::vector<Parser::Host> networks;
