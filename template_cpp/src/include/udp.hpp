@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <functional>
 #include "parser.hpp"
 #include "msg.hpp"

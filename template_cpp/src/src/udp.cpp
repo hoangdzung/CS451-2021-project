@@ -63,6 +63,11 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {
         false
         };
     msg_id++;
+    struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
+    
+    // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
+    // sentLock.lock();
+    sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
     msgQueueLock.lock();
     // std::cout << "Put msg " << wrapedMsg.payload << " to " <<wrapedMsg.receiver.id << "\n";
     msgQueue.push_back(wrapedMsg);
@@ -86,6 +91,11 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
         false
         };
     msg_id++;
+    struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
+    
+    // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
+    // sentLock.lock();
+    sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
     msgQueueLock.lock();
     // std::cout << "Put msg " << wrapedMsg.payload << " to " <<wrapedMsg.receiver.id << "\n";
     msgQueue.push_back(wrapedMsg);
@@ -99,11 +109,22 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
 void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     while(true) {
-        // std::this_thread::sleep_for (std::chrono::milliseconds(10));
+        std::this_thread::sleep_for (std::chrono::milliseconds(100));
 
         msgQueueLock.lock();
-        std::vector<Msg> copiedMsgQueue = msgQueue;
+        // std::set<Msg> copiedMsgQueue = msgQueue;
+        std::vector<Msg> copiedMsgQueue;
+        
+        if (msgQueue.size()>1000) {
+            std::partial_sort (msgQueue.begin(), msgQueue.begin()+1000, msgQueue.end());
+            copiedMsgQueue = std::vector<Msg>{msgQueue.begin(),std::next(msgQueue.begin(),1000)};
+        } else {
+            sort(msgQueue.begin(), msgQueue.end());
+            copiedMsgQueue = msgQueue;
+        }
         msgQueueLock.unlock();
+        // sort(copiedMsgQueue.begin(), copiedMsgQueue.end());
+
         // if (copiedMsgQueue.size()==0) {
         //     std::cout << "Empty msqQueue" << "\n";
         // }
@@ -135,6 +156,7 @@ void UDPSocket::receive() {
                 // std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.payload << "\n";
                 // std::cout << "Before:" << msgQueue.size() << "\n";
                 msgQueue.erase(std::remove(msgQueue.begin(), msgQueue.end(), wrapedMsg), msgQueue.end());
+                // msgQueue.erase(wrapedMsg);
                 // std::cout << "After:" << msgQueue.size() << "\n";
                 msgQueueLock.unlock();
             } else {
