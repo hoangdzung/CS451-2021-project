@@ -41,7 +41,7 @@ struct Payload {
 struct Msg {
     host_id_type senderId;
     host_id_type receiverId;
-    unsigned long msg_id;
+    // unsigned long msg_id;
     // unsigned int content;
     Payload payload; 
     bool is_ack;
@@ -50,18 +50,18 @@ struct Msg {
         if (other.is_ack) 
             return senderId == other.receiverId &&
                     receiverId == other.senderId &&
-                    msg_id == other.msg_id;
+                    payload == other.payload;
         else
             return senderId == other.senderId &&
                     receiverId == other.receiverId &&
-                    msg_id == other.msg_id;
+                     payload == other.payload;
     }
     bool operator <( const Msg& other ) const {
-        if (payload.seqNum == other.payload.seqNum) {
-            return msg_id < other.msg_id;
-        } else {
+        // if (payload.seqNum == other.payload.seqNum) {
+        //     return msg_id < other.msg_id;
+        // } else {
             return payload.seqNum < other.payload.seqNum;
-        }
+        // }
     }
 };
 

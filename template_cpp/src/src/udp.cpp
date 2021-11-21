@@ -57,12 +57,12 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {
     struct Msg wrapedMsg = {
         this->localhost.id,
         dest.id,
-        msg_id,
+        // msg_id,
         // std::make_pair(this->localhost.id, msg),
         Payload ({this->localhost.id, msg, seqNum}),
         false
         };
-    msg_id++;
+    // msg_id++;
     // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
     
     // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
@@ -86,11 +86,11 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
     struct Msg wrapedMsg = {
         this->localhost.id,
         dest.id,
-        msg_id,
+        // msg_id,
         msg,
         false
         };
-    msg_id++;
+    // msg_id++;
     // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
     
     // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
