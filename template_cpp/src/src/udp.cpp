@@ -14,6 +14,8 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks)
     this->networks = networks;
     this->deliverCallBack = [](Msg msg) {};
     msg_id = 0;
+    nSend = 100;
+    nReceive = 0;
 }
 
 UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack) {
@@ -21,6 +23,8 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks,
     this->networks = networks;
     this->deliverCallBack = deliverCallBack;
     msg_id = 0;
+    nSend = 100;
+    nReceive = 0;
 }
 
 void UDPSocket::start() {
@@ -38,6 +42,8 @@ UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
     this->deliverCallBack = other.deliverCallBack;
     this->sockfd = other.sockfd;
     this->msg_id = other.msg_id;
+    this->nSend = other.nSend;
+    this->nReceive = other.nReceive;
     this->msgQueue = other.msgQueue;
     this->receivedMsgs = other.receivedMsgs;
     return *this;
@@ -62,7 +68,7 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {
         Payload ({this->localhost.id, msg, seqNum}),
         false
         };
-    // msg_id++;
+    msg_id++;
     // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
     
     // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
@@ -90,7 +96,7 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
         msg,
         false
         };
-    // msg_id++;
+    msg_id++;
     // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
     
     // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
@@ -114,10 +120,15 @@ void UDPSocket::send() {
         msgQueueLock.lock();
         // std::set<Msg> copiedMsgQueue = msgQueue;
         std::vector<Msg> copiedMsgQueue;
-        
-        if (msgQueue.size()>100) {
-            std::partial_sort (msgQueue.begin(), msgQueue.begin()+100, msgQueue.end());
-            copiedMsgQueue = std::vector<Msg>{msgQueue.begin(),std::next(msgQueue.begin(),100)};
+        // std::cout << "NReceive:" << nReceive << "\n";
+        if (nReceive ==0) {
+            nSend += 100;
+            // std::cout << "Nsend:" << nSend << "\n";
+        } 
+        nReceive = 0;
+        if (msgQueue.size()>nSend) {
+            std::partial_sort (msgQueue.begin(), msgQueue.begin()+nSend, msgQueue.end());
+            copiedMsgQueue = std::vector<Msg>{msgQueue.begin(),std::next(msgQueue.begin(),nSend)};
         } else {
             sort(msgQueue.begin(), msgQueue.end());
             copiedMsgQueue = msgQueue;
@@ -156,6 +167,7 @@ void UDPSocket::receive() {
                 // std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.payload << "\n";
                 // std::cout << "Before:" << msgQueue.size() << "\n";
                 msgQueue.erase(std::remove(msgQueue.begin(), msgQueue.end(), wrapedMsg), msgQueue.end());
+                nReceive += 1;
                 // msgQueue.erase(wrapedMsg);
                 // std::cout << "After:" << msgQueue.size() << "\n";
                 msgQueueLock.unlock();
