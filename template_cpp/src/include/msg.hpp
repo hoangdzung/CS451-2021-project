@@ -46,7 +46,7 @@ struct Msg {
     Payload payload; 
     bool is_ack;
     public:
-    bool operator==( const Msg& other ) {
+    bool operator==( const Msg& other ) const {
         if (other.is_ack) 
             return senderId == other.receiverId &&
                     receiverId == other.senderId &&
@@ -55,6 +55,13 @@ struct Msg {
             return senderId == other.senderId &&
                     receiverId == other.receiverId &&
                     msg_id == other.msg_id;
+    }
+    bool operator <( const Msg& other ) const {
+        if (payload.seqNum == other.payload.seqNum) {
+            return msg_id < other.msg_id;
+        } else {
+            return payload.seqNum < other.payload.seqNum;
+        }
     }
 };
 
