@@ -14,8 +14,8 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks)
     this->networks = networks;
     this->deliverCallBack = [](Msg msg) {};
     msg_id = 0;
-    nSend = 100;
-    nPrevSend = 100;
+    nSend = 500;
+    nPrevSend = 500;
     nReceive = 0;
 }
 
@@ -24,8 +24,8 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks,
     this->networks = networks;
     this->deliverCallBack = deliverCallBack;
     msg_id = 0;
-    nSend = 100;
-    nPrevSend = 100;
+    nSend = 500;
+    nPrevSend = 500;
     nReceive = 0;
 }
 
