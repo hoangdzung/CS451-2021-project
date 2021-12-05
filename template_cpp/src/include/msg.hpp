@@ -32,17 +32,18 @@ struct Payload {
     }
 };
 
-// bool operator==(const Payload& left, const Payload& right) {
-//     return left.id == right.id &&
-//             left.content == right.content &&
-//             left.seqNum == right.seqNum;
-// }
+struct WrapedPayload {
+    Payload payload;
+    bool is_ack;
+    public:
+    bool operator==( const WrapedPayload& other ) const {
+        return payload == other.payload;
+    }
+};
 
 struct Msg {
     host_id_type senderId;
     host_id_type receiverId;
-    // unsigned long msg_id;
-    // unsigned int content;
     Payload payload; 
     bool is_ack;
     public:
@@ -57,11 +58,22 @@ struct Msg {
                      payload == other.payload;
     }
     bool operator <( const Msg& other ) const {
-        // if (payload.seqNum == other.payload.seqNum) {
-        //     return msg_id < other.msg_id;
-        // } else {
-            return payload.seqNum < other.payload.seqNum;
-        // }
+        return payload.seqNum < other.payload.seqNum;
+    }
+};
+
+
+struct PackedMsg {
+    host_id_type senderId;
+    host_id_type receiverId;
+    // unsigned long msg_id;
+    // unsigned int content;
+    WrapedPayload payloads[100];
+    long unsigned int nMsg; 
+    PackedMsg() {};
+    PackedMsg(host_id_type senderId_, host_id_type receiverId_, WrapedPayload* payload_, long unsigned int nMsg_) :
+    senderId(senderId_), receiverId(receiverId_), nMsg(nMsg_) {
+        memcpy ( payloads, payload_, sizeof(payloads) );
     }
 };
 

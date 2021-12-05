@@ -62,28 +62,18 @@ struct sockaddr_in UDPSocket::setUpDestAddr(unsigned long destId) {
 }
 
 void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {    
-    // struct sockaddr_in destaddr = this->setUpDestAddr(dest);
-    struct Msg wrapedMsg = {
-        this->localhost.id,
-        dest.id,
-        // msg_id,
-        // std::make_pair(this->localhost.id, msg),
+    struct WrapedPayload wrapedPayload = {
         Payload ({this->localhost.id, msg, seqNum}),
         false
         };
-    msg_id++;
-    // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
-    
-    // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
-    // // sentLock.lock();
-    // sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+
     msgQueueLock.lock();
-    // std::cout << "Put msg " << wrapedMsg.payload << " to " <<wrapedMsg.receiver.id << "\n";
     auto it = msgQueue.find(dest.id);
     if (it!=msgQueue.end()) {
-        it->second.push_back(wrapedMsg);
+        it->second.push_back(wrapedPayload);
     } else {
-        msgQueue.insert({dest.id, {wrapedMsg}});
+        // msgQueue.insert({dest.id, std::list<WrapedPayload>({wrapedPayload})});
+        msgQueue.insert({dest.id, std::vector<WrapedPayload>({wrapedPayload})});
     }
     msgQueueLock.unlock();
 
@@ -96,27 +86,17 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {
 }
 
 void UDPSocket::put(Parser::Host dest, Payload msg) {    
-    // struct sockaddr_in destaddr = this->setUpDestAddr(dest);
-    struct Msg wrapedMsg = {
-        this->localhost.id,
-        dest.id,
-        // msg_id,
+    struct WrapedPayload wrapedPayload = {
         msg,
         false
         };
-    msg_id++;
-    // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
-    
-    // // std::cout << "Send msg " << wrapedMsg.payload.content << " to " <<wrapedMsg.receiver.id << "\n";
-    // // sentLock.lock();
-    // sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
     msgQueueLock.lock();
-    // std::cout << "Put msg " << wrapedMsg.payload << " to " <<wrapedMsg.receiver.id << "\n";
     auto it = msgQueue.find(dest.id);
     if (it!=msgQueue.end()) {
-        it->second.push_back(wrapedMsg);
+        it->second.push_back(wrapedPayload);
     } else {
-        msgQueue.insert({dest.id, {wrapedMsg}});
+        // msgQueue.insert({dest.id, std::list<WrapedPayload>({wrapedPayload})});
+        msgQueue.insert({dest.id, std::vector<WrapedPayload>({wrapedPayload})});
     }
     msgQueueLock.unlock();
 
@@ -127,12 +107,14 @@ void UDPSocket::put(Parser::Host dest, Payload msg) {
 
 void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
+    WrapedPayload wrapedPayloads[100];
     while(true) {
         std::this_thread::sleep_for (std::chrono::milliseconds(100));
 
         msgQueueLock.lock();
         // std::set<Msg> copiedMsgQueue = msgQueue;
-        std::unordered_map<host_id_type, std::vector<Msg>> copiedMsgQueue = msgQueue;
+        // std::unordered_map<host_id_type, std::list<WrapedPayload>> copiedMsgQueue = msgQueue;
+        std::unordered_map<host_id_type, std::vector<WrapedPayload>> copiedMsgQueue = msgQueue;
         msgQueueLock.unlock();
         // sort(copiedMsgQueue.begin(), copiedMsgQueue.end());
 
@@ -152,12 +134,23 @@ void UDPSocket::send() {
                     } else {
                         done = false;
                     }
-                    for (long unsigned int i=0;i<nSend;i++) {
-                        Msg wrapedMsg = it.second[i];
-                        struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
-                        sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
-                    }
-                    it.second.erase(it.second.begin(), it.second.begin() + nSend);
+                    // std::cout << "Have "<< it.second.size() << " msgs of " << it.first << "\n";
+                    // std::cout << "Pack "<< nSend << " msgs of " << it.first << "\n";
+                    // std::list<WrapedPayload>::iterator itBegin = it.second.begin();
+                    // std::list<WrapedPayload>::iterator itEnd = it.second.begin();
+                    // advance(itEnd,nSend);
+                    // std::copy(itBegin, itEnd, wrapedPayloads);
+                    std::copy(it.second.begin(), it.second.begin()+nSend, wrapedPayloads);
+                    PackedMsg packedMsg = {
+                        this->localhost.id,
+                        it.first,
+                        wrapedPayloads,
+                        nSend
+                    };
+                    struct sockaddr_in destaddr = this->setUpDestAddr(packedMsg.receiverId);
+                    sendto(this->sockfd, &packedMsg, sizeof(packedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+                    it.second.erase(it.second.begin(), it.second.begin()+nSend);
+                    // std::cout << "Have "<< it.second.size() << " msgs of " << it.first << "\n";
                 }
             }        
         }
@@ -166,57 +159,72 @@ void UDPSocket::send() {
 
 void UDPSocket::receive() {
     // Reference: https://stackoverflow.com/questions/18670807/sending-and-receiving-stdstring-over-socket
-    struct Msg wrapedMsg; 
+    struct PackedMsg packedMsg; 
     while (true) {
         // std::this_thread::sleep_for (std::chrono::milliseconds(1));
 
-        if (recv(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0) < 0) {
+        if (recv(this->sockfd, &packedMsg, sizeof(packedMsg), 0) < 0) {
             throw std::runtime_error("Receive failed");
         } else {
-            auto it = msgQueue.find(wrapedMsg.senderId);
-            if (it==receivedMsgs.end()) {
-                receivedMsgs.insert({wrapedMsg.senderId, std::vector<Msg>({})});
-            }
-            if (wrapedMsg.is_ack) {
-                msgQueueLock.lock();
-                // std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.payload << "\n";
-                // std::cout << "Before:" << msgQueue.size() << "\n";
-                it->second.erase(std::remove(it->second.begin(), it->second.end(), wrapedMsg), it->second.end());
-                nReceive += 1;
-                // msgQueue.erase(wrapedMsg);
-                // std::cout << "After:" << msgQueue.size() << "\n";
-                msgQueueLock.unlock();
-            } else {
-                //normal msg
-                if (std::find(it->second.begin(), it->second.end(), wrapedMsg) != it->second.end()) {
-                    // if already receive
-                    // std::cout<< "Rejected " << wrapedMsg.payload << " from "<< wrapedMsg.sender.id << "\n";
+            for (long unsigned int i=0; i<packedMsg.nMsg;i++) {
+                // std::cout << packedMsg.payloads[i].payload.content << " " << packedMsg.payloads[i].is_ack << "\n";
+                if (packedMsg.payloads[i].is_ack) {
+                    msgQueueLock.lock();
+                    // std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.payload << "\n";
+                    // std::cout << "Before:" << msgQueue.size() << "\n";
+                    auto msgQueueIt = msgQueue.find(packedMsg.senderId);
+                    if (msgQueueIt!=msgQueue.end()) {
+                        msgQueueIt->second.erase(std::remove(msgQueueIt->second.begin(), msgQueueIt->second.end(), packedMsg.payloads[i]), msgQueueIt->second.end());
+                    }                       
+                    // msgQueue.erase(wrapedMsg);
+                    // std::cout << "After:" << msgQueue.size() << "\n";
+                    msgQueueLock.unlock();
                 } else {
-                    //otherwise, save it
-                    it->second.push_back(wrapedMsg);
-                    // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
-                    // std::cout << "PL Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+                    //normal msg
+                    auto receivedIt = receivedMsgs.find(packedMsg.senderId);
+                    if (receivedIt==receivedMsgs.end()) {
+                        // receivedMsgs.insert({packedMsg.senderId, std::list<WrapedPayload>({})});
+                        receivedMsgs.insert({packedMsg.senderId, std::vector<WrapedPayload>({})});
+                        receivedIt = receivedMsgs.find(packedMsg.senderId);
+                    }
+                    if (std::find(receivedIt->second.begin(), receivedIt->second.end(), packedMsg.payloads[i]) != receivedIt->second.end()) {
+                        // if already receive
+                        // std::cout<< "Rejected " << wrapedMsg.payload << " from "<< wrapedMsg.sender.id << "\n";
+                    } else {
+                        //otherwise, save it
+                     
+                        receivedIt->second.push_back(packedMsg.payloads[i]);
+                        // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
+                        // std::cout << "PL Delivered " << packedMsg.payloads[i].payload.content << " from " << packedMsg.payloads[i].payload.id <<  "\n";
 
-                    std::ostringstream oss;
-                    oss << "d " << wrapedMsg.senderId << " " << wrapedMsg.payload.content;
-                    this->writeLogs(oss.str());
+                        std::ostringstream oss;
+                        oss << "d " << packedMsg.senderId << " " << packedMsg.payloads[i].payload.content;
+                        this->writeLogs(oss.str());
 
-                    this->deliverCallBack(wrapedMsg);
+                        this->deliverCallBack({packedMsg.senderId, packedMsg.receiverId, packedMsg.payloads[i].payload, packedMsg.payloads[i].is_ack});
+                        // std::cout<< "Received " << wrapedMsg.payload << " from "<< wrapedMsg.sender.id << "\n";
+                    }    
+                    // std::this_thread::sleep_for (std::chrono::milliseconds(1));
+                    // send Ack back to sender
+                    msgQueueLock.lock();
+                    auto msgQueueIt = msgQueue.find(packedMsg.senderId);
+                    if (msgQueueIt!=msgQueue.end()) {
+                        // msgQueueIt->second.push_front({packedMsg.payloads[i].payload, true});
+                        msgQueueIt->second.push_back({packedMsg.payloads[i].payload, true});
+                    }  
+                    msgQueueLock.unlock();
 
-                    // std::cout<< "Received " << wrapedMsg.payload << " from "<< wrapedMsg.sender.id << "\n";
-                }    
-                // std::this_thread::sleep_for (std::chrono::milliseconds(1));
-                // send Ack back to sender
-                wrapedMsg.is_ack = true;
-                struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.senderId);
-                
-                host_id_type tempAddr = wrapedMsg.senderId;
-                wrapedMsg.senderId = this->localhost.id;
-                wrapedMsg.receiverId = tempAddr;
-                // sentLock.lock();
-                sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
-                // sentLock.unlock();
-            }  
+                    // wrapedMsg.is_ack = true;
+                    // struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.senderId);
+                    
+                    // host_id_type tempAddr = wrapedMsg.senderId;
+                    // wrapedMsg.senderId = this->localhost.id;
+                    // wrapedMsg.receiverId = tempAddr;
+                    // // sentLock.lock();
+                    // sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+                    // // sentLock.unlock();
+                } 
+            } 
         }
     }
 }

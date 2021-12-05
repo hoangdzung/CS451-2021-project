@@ -6,6 +6,7 @@
 #include <queue>
 #include <set>
 #include <functional>
+#include <list>
 #include <unordered_map>
 #include "parser.hpp"
 #include "msg.hpp"
@@ -36,12 +37,14 @@ class UDPSocket {
         std::vector<std::string> logs;
         int sockfd; // socket file descriptor
         unsigned long msg_id;
-        std::unordered_map<host_id_type, std::vector<Msg>> msgQueue;
+        // std::unordered_map<host_id_type, std::list<WrapedPayload>> msgQueue;
+        std::unordered_map<host_id_type, std::vector<WrapedPayload>> msgQueue;
         std::mutex msgQueueLock;
         std::mutex logsLock;
         std::mutex sentLock;
 
-        std::unordered_map<host_id_type, std::vector<Msg>> receivedMsgs;
+        // std::unordered_map<host_id_type, std::list<WrapedPayload>> receivedMsgs;
+        std::unordered_map<host_id_type, std::vector<WrapedPayload>> receivedMsgs;
         int setupSocket(Parser::Host host);
         struct sockaddr_in setUpDestAddr(host_id_type destId);
         void send();
