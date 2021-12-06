@@ -71,7 +71,7 @@ struct PackedMsg {
     unsigned long msg_id;
     bool is_ack;
     // unsigned int content;
-    Payload payloads[100];
+    Payload payloads[500];
     long unsigned int nMsg; 
     PackedMsg() {};
     PackedMsg(host_id_type senderId_, host_id_type receiverId_, unsigned long msg_id_, bool is_ack_, std::vector<Payload> payload_, long unsigned int nMsg_) :

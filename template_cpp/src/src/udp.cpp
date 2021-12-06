@@ -14,7 +14,7 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks)
     this->networks = networks;
     this->deliverCallBack = [](Msg msg) {};
     msg_id = 0;
-    packedSize = 100;
+    packedSize = 500;
 }
 
 UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack) {
@@ -22,7 +22,7 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks,
     this->networks = networks;
     this->deliverCallBack = deliverCallBack;
     msg_id = 0;
-    packedSize = 100;
+    packedSize = 500;
 
 }
 
@@ -59,7 +59,17 @@ struct sockaddr_in UDPSocket::setUpDestAddr(unsigned long destId) {
 void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {    
     // struct sockaddr_in destaddr = this->setUpDestAddr(dest);
     struct Payload payload = {this->localhost.id, msg, seqNum};
-    
+    bool wait = true;
+    while(wait) {
+        msgQueueLock.lock();
+        if (msgQueue.size()<=this->networks.size()*this->networks.size()) {
+            wait = false;
+        } 
+        msgQueueLock.unlock();
+        if (wait) {
+            std::this_thread::sleep_for (std::chrono::seconds(1));
+        }
+    }
     msgQueueLock.lock();
     auto it = tempBuffer.find(dest.id);
     if (it!=tempBuffer.end()) {
@@ -91,7 +101,13 @@ void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {
 
 }
 
-void UDPSocket::put(Parser::Host dest, Payload payload) {    
+void UDPSocket::put(Parser::Host dest, Payload payload) {  
+
+    msgQueueLock.lock();
+    unsigned long queueSize = msgQueue.size();
+    msgQueueLock.unlock();
+    if (queueSize > this->networks.size() && payload.id == this->localhost.id)
+        std::this_thread::sleep_for (std::chrono::milliseconds(queueSize));
     msgQueueLock.lock();
     auto it = tempBuffer.find(dest.id);
     if (it!=tempBuffer.end()) {
@@ -124,7 +140,7 @@ void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     unsigned long int nSent = 0;
     while(true) {
-        std::this_thread::sleep_for (std::chrono::microseconds(100*nSent));
+        std::this_thread::sleep_for (std::chrono::microseconds(this->packedSize*nSent*this->networks.size()));
         nSent = 0;
         msgQueueLock.lock();
         // std::set<Msg> copiedMsgQueue = msgQueue;
@@ -192,12 +208,13 @@ void UDPSocket::receive() {
                 msgQueueLock.unlock();
             } else {
                 //normal msg
-                if (std::find(receivedMsgs.begin(), receivedMsgs.end(), packedMsg) != receivedMsgs.end()) {
+                // if (std::find(receivedMsgs.begin(), receivedMsgs.end(), std::make_pair(packedMsg.senderId, packedMsg.msg_id)) != receivedMsgs.end()) {
+                if (receivedMsgs.find(std::make_pair(packedMsg.senderId, packedMsg.msg_id)) != receivedMsgs.end()) {
                     // if already receive
                     // std::cout<< "Rejected " << wrapedMsg.payload << " from "<< wrapedMsg.sender.id << "\n";
                 } else {
                     //otherwise, save it
-                    receivedMsgs.push_back(packedMsg);
+                    receivedMsgs.insert(std::make_pair(packedMsg.senderId, packedMsg.msg_id));
                     // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
                     // std::cout << "PL Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
                     for (long unsigned int i=0; i<packedMsg.nMsg;i++) {
