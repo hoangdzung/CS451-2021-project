@@ -122,9 +122,10 @@ void UDPSocket::put(Parser::Host dest, Payload payload) {
 
 void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
+    unsigned long int nSent = 0;
     while(true) {
-        std::this_thread::sleep_for (std::chrono::milliseconds(1));
-
+        std::this_thread::sleep_for (std::chrono::microseconds(10*nSent));
+        nSent = 0;
         msgQueueLock.lock();
         // std::set<Msg> copiedMsgQueue = msgQueue;
         if (msgQueue.empty()) {
@@ -162,6 +163,7 @@ void UDPSocket::send() {
             
             // sentLock.lock();
             sendto(this->sockfd, &wrapedMsg, sizeof(wrapedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+            nSent++;
             // sentLock.unlock();
 
             // std::this_thread::sleep_for (std::chrono::milliseconds(10));
@@ -216,7 +218,8 @@ void UDPSocket::receive() {
                 packedMsg.senderId = this->localhost.id;
                 packedMsg.receiverId = tempAddr;
                 // sentLock.lock();
-                sendto(this->sockfd, &packedMsg, sizeof(packedMsg), 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+                // sendto(this->sockfd, &packedMsg, sizeof(packedMsg)-sizeof(Payload)*100 , 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+                sendto(this->sockfd, &packedMsg, sizeof(packedMsg) , 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
                 // sentLock.unlock();
             }  
         }
