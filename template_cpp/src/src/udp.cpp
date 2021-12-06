@@ -124,7 +124,7 @@ void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     unsigned long int nSent = 0;
     while(true) {
-        std::this_thread::sleep_for (std::chrono::microseconds(10*nSent));
+        std::this_thread::sleep_for (std::chrono::microseconds(100*nSent));
         nSent = 0;
         msgQueueLock.lock();
         // std::set<Msg> copiedMsgQueue = msgQueue;
