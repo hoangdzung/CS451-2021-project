@@ -5,6 +5,7 @@
 #include <mutex>
 #include <queue>
 #include <set>
+#include <unordered_map>
 #include <functional>
 #include "parser.hpp"
 #include "msg.hpp"
@@ -24,9 +25,7 @@ class UDPSocket {
         UDPSocket& operator=(const UDPSocket & other);
 
     private:
-        unsigned long nSend;
-        unsigned long nPrevSend;
-        unsigned long nReceive;
+        unsigned long packedSize;
         void writeLogs(std::string log);
         Parser::Host localhost;
         std::vector<Parser::Host> networks;
@@ -35,12 +34,14 @@ class UDPSocket {
         std::vector<std::string> logs;
         int sockfd; // socket file descriptor
         unsigned long msg_id;
-        std::vector<Msg> msgQueue;
+        std::vector<PackedMsg> msgQueue;
+        std::unordered_map<host_id_type, std::vector<Payload>> tempBuffer;
+
         std::mutex msgQueueLock;
         std::mutex logsLock;
         std::mutex sentLock;
 
-        std::vector<Msg> receivedMsgs;
+        std::vector<PackedMsg> receivedMsgs;
         int setupSocket(Parser::Host host);
         struct sockaddr_in setUpDestAddr(host_id_type destId);
         void send();

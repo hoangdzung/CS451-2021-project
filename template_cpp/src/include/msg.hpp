@@ -47,7 +47,7 @@ struct Msg {
     bool is_ack;
     public:
     bool operator==( const Msg& other ) const {
-        if (other.is_ack) 
+        if (is_ack != other.is_ack) 
             return senderId == other.receiverId &&
                     receiverId == other.senderId &&
                     payload == other.payload;
@@ -64,6 +64,31 @@ struct Msg {
         // }
     }
 };
+
+struct PackedMsg {
+    host_id_type senderId;
+    host_id_type receiverId;
+    unsigned long msg_id;
+    bool is_ack;
+    // unsigned int content;
+    Payload payloads[100];
+    long unsigned int nMsg; 
+    PackedMsg() {};
+    PackedMsg(host_id_type senderId_, host_id_type receiverId_, unsigned long msg_id_, bool is_ack_, std::vector<Payload> payload_, long unsigned int nMsg_) :
+    senderId(senderId_), receiverId(receiverId_), msg_id(msg_id_), is_ack(is_ack_), nMsg(nMsg_) {
+        std::copy(payload_.begin(), payload_.begin() + nMsg_, payloads);
+    }
+    bool operator==( const PackedMsg& other ) const {
+        if (is_ack != other.is_ack) 
+            return senderId == other.receiverId &&
+                    receiverId == other.senderId &&
+                    msg_id == other.msg_id;
+        else
+            return senderId == other.senderId &&
+                    receiverId == other.receiverId &&
+                     msg_id == other.msg_id;    }
+};
+
 
 struct hash_custom {
   size_t operator()(const Payload & x) const {
