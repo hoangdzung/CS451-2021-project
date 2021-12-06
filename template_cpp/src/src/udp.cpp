@@ -236,7 +236,7 @@ void UDPSocket::receive() {
                 packedMsg.receiverId = tempAddr;
                 // sentLock.lock();
                 // sendto(this->sockfd, &packedMsg, sizeof(packedMsg)-sizeof(Payload)*100 , 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
-                sendto(this->sockfd, &packedMsg, sizeof(packedMsg) , 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
+                sendto(this->sockfd, &packedMsg, sizeof(packedMsg) - this->packedSize*sizeof(Payload) , 0, reinterpret_cast<const sockaddr *>(&destaddr), sizeof(destaddr));
                 // sentLock.unlock();
             }  
         }
