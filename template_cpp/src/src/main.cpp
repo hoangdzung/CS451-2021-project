@@ -8,7 +8,8 @@
 #include "udp.hpp"
 #include "beb.hpp"
 #include "urb.hpp"
-#include "fifo.hpp"
+// #include "fifo.hpp"
+#include "lcb.hpp"
 #include "hello.h"
 #include <signal.h>
 
@@ -16,7 +17,8 @@ std::ofstream outputFile;
 UDPSocket udp;
 BestEffortBroadcast beb;
 UniReliableBroadcast urb;
-FIFOBroadcast fifo;
+// FIFOBroadcast fifo;
+LCausalBroadcast lcb;
 
 static void stop(int) {
   // reset signal handlers to default
@@ -29,7 +31,7 @@ static void stop(int) {
   // write/flush output file if necessary
   std::cout << "Writing output.\n";
 
-  for(auto const &output: fifo.getLogs()){
+  for(auto const &output: lcb.getLogs()){
     outputFile << output << "\n" ;
   }
   outputFile.close();
@@ -45,7 +47,7 @@ int main(int argc, char **argv) {
   // Call with `false` if no config file is necessary.
   bool requireConfig = true;
   unsigned long m,i;
-
+  std::vector<std::vector<unsigned long>> input;
   Parser parser(argc, argv);
   parser.parse();
 
@@ -95,8 +97,18 @@ int main(int argc, char **argv) {
   //     udp.put(hosts[i-1], msg);      
   //   }
   // }
-
-  config_file >> m;
+  std::string line;
+  while(getline(config_file, line, '\n')) {
+      std::stringstream ss(line);
+      std::vector<unsigned long> numbers;
+      std::string in_line;
+      while(getline (ss, in_line, ' ')) {
+        numbers.push_back(std::stoi(in_line, 0));
+      }
+      input.push_back(numbers);
+  }
+  m = input[0][0];
+  // config_file >> m;
   config_file.close();
   // beb = BestEffortBroadcast(hosts[parser.id()-1], hosts);
   // beb.start();
@@ -108,10 +120,17 @@ int main(int argc, char **argv) {
   // for (unsigned int msg=1;msg<=m;msg ++) {
   //   urb.broadcast(msg);      
   // }
-  fifo = FIFOBroadcast(hosts[parser.id()-1], hosts);
-  fifo.start();
+  // fifo = FIFOBroadcast(hosts[parser.id()-1], hosts);
+  // fifo.start();
+  // for (unsigned int msg=1;msg<=m;msg ++) {
+  //   fifo.broadcast(msg);      
+  //   if (msg%(2500/ hosts.size())==0)
+  //   std::this_thread::sleep_for(std::chrono::seconds(1));
+  // // }
+  lcb = LCausalBroadcast(hosts[parser.id()-1], hosts, input[parser.id()]);
+  lcb.start();
   for (unsigned int msg=1;msg<=m;msg ++) {
-    fifo.broadcast(msg);      
+    lcb.broadcast(msg);      
     if (msg%(2500/ hosts.size())==0)
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }

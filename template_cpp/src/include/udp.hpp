@@ -20,13 +20,15 @@ class UDPSocket {
         UDPSocket(const UDPSocket &);
         // bool UDPSocket& operator=(const UDPSocket&);
         void start();
-        void put(Parser::Host dest, unsigned int msg, unsigned long seqNum=0);
+        // void put(Parser::Host dest, unsigned int msg, unsigned long seqNum=0);
         void put(Parser::Host dest, Payload msg);
         std::vector<std::string> getLogs();
         UDPSocket& operator=(const UDPSocket & other);
 
     private:
         unsigned long packedSize;
+        unsigned long queueSize;
+        unsigned long prevQueueSize;
         void writeLogs(std::string log);
         Parser::Host localhost;
         std::vector<Parser::Host> networks;

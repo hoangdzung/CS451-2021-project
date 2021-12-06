@@ -5,6 +5,7 @@
 #include "udp.hpp"
 
 // Reference: https://www.geeksforgeeks.org/udp-server-client-implementation-c/
+#define MAX_MSGS 50
 
 UDPSocket::UDPSocket() {
     this->deliverCallBack = [](Msg msg) {};
@@ -14,7 +15,9 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks)
     this->networks = networks;
     this->deliverCallBack = [](Msg msg) {};
     msg_id = 0;
-    packedSize = 500;
+    packedSize = MAX_MSGS;
+    queueSize = 0;
+    prevQueueSize = 0;
 }
 
 UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks, std::function<void(Msg)> deliverCallBack) {
@@ -22,8 +25,9 @@ UDPSocket::UDPSocket(Parser::Host localhost, std::vector<Parser::Host> networks,
     this->networks = networks;
     this->deliverCallBack = deliverCallBack;
     msg_id = 0;
-    packedSize = 500;
-
+    packedSize = MAX_MSGS;
+    queueSize = 0;
+    prevQueueSize = 0;
 }
 
 void UDPSocket::start() {
@@ -42,6 +46,8 @@ UDPSocket& UDPSocket::operator=(const UDPSocket & other) {
     this->sockfd = other.sockfd;
     this->msg_id = other.msg_id;
     this->packedSize = other.packedSize;
+    this->queueSize = other.queueSize;
+    this->prevQueueSize = other.prevQueueSize;
     this->msgQueue = other.msgQueue;
     this->receivedMsgs = other.receivedMsgs;
     return *this;
@@ -56,55 +62,55 @@ struct sockaddr_in UDPSocket::setUpDestAddr(unsigned long destId) {
     return destaddr;
 }
 
-void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {    
-    // struct sockaddr_in destaddr = this->setUpDestAddr(dest);
-    struct Payload payload = {this->localhost.id, msg, seqNum};
-    bool wait = true;
-    while(wait) {
-        msgQueueLock.lock();
-        if (msgQueue.size()<=this->networks.size()*this->networks.size()) {
-            wait = false;
-        } 
-        msgQueueLock.unlock();
-        if (wait) {
-            std::this_thread::sleep_for (std::chrono::seconds(1));
-        }
-    }
-    msgQueueLock.lock();
-    auto it = tempBuffer.find(dest.id);
-    if (it!=tempBuffer.end()) {
-        it->second.push_back(payload);
-        while(it->second.size() >= this->packedSize) {
-            PackedMsg packedMsg = {
-                this->localhost.id,
-                dest.id,
-                this->msg_id,
-                false,
-                it->second,
-                this->packedSize
-            };
-            msg_id++;
-            msgQueue.push_back(packedMsg);
-            it->second.erase(it->second.begin(), it->second.begin()+this->packedSize);
-        }
-    } else {
-        tempBuffer.insert({dest.id, std::vector<Payload>({payload})});
-    }
+// void UDPSocket::put(Parser::Host dest, unsigned int msg, unsigned long seqNum) {    
+//     // struct sockaddr_in destaddr = this->setUpDestAddr(dest);
+//     struct Payload payload = {this->localhost.id, msg, seqNum};
+//     bool wait = true;
+//     while(wait) {
+//         msgQueueLock.lock();
+//         if (msgQueue.size()<=this->networks.size()*this->networks.size()) {
+//             wait = false;
+//         } 
+//         msgQueueLock.unlock();
+//         if (wait) {
+//             std::this_thread::sleep_for (std::chrono::seconds(1));
+//         }
+//     }
+//     msgQueueLock.lock();
+//     auto it = tempBuffer.find(dest.id);
+//     if (it!=tempBuffer.end()) {
+//         it->second.push_back(payload);
+//         while(it->second.size() >= this->packedSize) {
+//             PackedMsg packedMsg = {
+//                 this->localhost.id,
+//                 dest.id,
+//                 this->msg_id,
+//                 false,
+//                 it->second,
+//                 this->packedSize
+//             };
+//             msg_id++;
+//             msgQueue.push_back(packedMsg);
+//             it->second.erase(it->second.begin(), it->second.begin()+this->packedSize);
+//         }
+//     } else {
+//         tempBuffer.insert({dest.id, std::vector<Payload>({payload})});
+//     }
 
-    msgQueueLock.unlock();
+//     msgQueueLock.unlock();
 
-    std::ostringstream oss;
-    oss << "b " << msg;
-    logsLock.lock();
-    logs.push_back(oss.str());
-    logsLock.unlock();
+//     std::ostringstream oss;
+//     oss << "b " << msg;
+//     logsLock.lock();
+//     logs.push_back(oss.str());
+//     logsLock.unlock();
 
-}
+// }
 
 void UDPSocket::put(Parser::Host dest, Payload payload) {  
 
     msgQueueLock.lock();
-    unsigned long queueSize = msgQueue.size();
+    queueSize = msgQueue.size();
     msgQueueLock.unlock();
     if (queueSize > this->networks.size() && payload.id == this->localhost.id)
         std::this_thread::sleep_for (std::chrono::milliseconds(queueSize));
@@ -128,27 +134,32 @@ void UDPSocket::put(Parser::Host dest, Payload payload) {
     } else {
         tempBuffer.insert({dest.id, std::vector<Payload>({payload})});
     }
+    // std::cout << "Queuesize:"<<queueSize<< " PL send " << payload.vectorClock[0] <<" "<< payload.vectorClock[1] << " "<< payload.vectorClock[2] <<" to "<< dest.id <<"\n";
 
     msgQueueLock.unlock();
 
-    std::ostringstream oss;
-    oss << "b " << payload.content;
-    this->writeLogs(oss.str());
+    // std::ostringstream oss;
+    // oss << "b " << payload.content;
+    // this->writeLogs(oss.str());
 }
 
 void UDPSocket::send() {
     // Reference: https://stackoverflow.com/questions/5249418/warning-use-of-old-style-cast-in-g just try all of them until no error
     unsigned long int nSent = 0;
     while(true) {
-        std::this_thread::sleep_for (std::chrono::microseconds(this->packedSize*nSent*this->networks.size()));
+        // std::this_thread::sleep_for (std::chrono::microseconds(this->packedSize*nSent*this->networks.size()));
+        std::this_thread::sleep_for (std::chrono::milliseconds(this->packedSize*nSent*this->networks.size()));
         nSent = 0;
         msgQueueLock.lock();
         // std::set<Msg> copiedMsgQueue = msgQueue;
-        if (msgQueue.empty()) {
+        queueSize = msgQueue.size();
+        if (prevQueueSize == queueSize) {
+        // if (msgQueue.empty()) {
             for (auto& it :tempBuffer) {
                 if (it.second.empty()) {
                     continue;
                 } else {
+                    // std::cout << "Queue empty, so publish incompleted package" <<"\n";
                     if (it.second.size() >= this->packedSize) {
                         throw std::runtime_error("Something wrong");
                     }
@@ -165,15 +176,18 @@ void UDPSocket::send() {
                     it.second.clear();
                 }
             } 
+            // std::cout << "Current queuesize " << msgQueue.size() << "\n";
         }
         std::vector<PackedMsg> copiedMsgQueue = msgQueue;
         // std::cout << "NReceive:" << nReceive << "\n";
+        prevQueueSize = queueSize;
         msgQueueLock.unlock();
         // sort(copiedMsgQueue.begin(), copiedMsgQueue.end());
 
         // if (copiedMsgQueue.size()==0) {
         //     std::cout << "Empty msqQueue" << "\n";
         // }
+        // std::cout << "Send " << copiedMsgQueue.size() << "\n";
         for (const auto wrapedMsg : copiedMsgQueue) {
             struct sockaddr_in destaddr = this->setUpDestAddr(wrapedMsg.receiverId);
             
@@ -191,6 +205,7 @@ void UDPSocket::send() {
 void UDPSocket::receive() {
     // Reference: https://stackoverflow.com/questions/18670807/sending-and-receiving-stdstring-over-socket
     struct PackedMsg packedMsg; 
+    // std::cout << sizeof(packedMsg) << "\n";
     while (true) {
         // std::this_thread::sleep_for (std::chrono::milliseconds(1));
 
@@ -199,7 +214,7 @@ void UDPSocket::receive() {
         } else {
             if (packedMsg.is_ack) {
                 msgQueueLock.lock();
-                // std::cout << "Receive ack from " << wrapedMsg.sender.id << " with content " << wrapedMsg.payload << "\n";
+                // std::cout << "Receive ack from " << packedMsg.receiverId << " with id " << packedMsg.msg_id << "\n";
                 // std::cout << "Before:" << msgQueue.size() << "\n";
                 msgQueue.erase(std::remove(msgQueue.begin(), msgQueue.end(), packedMsg), msgQueue.end());
                 // nReceive += 1;
@@ -216,11 +231,11 @@ void UDPSocket::receive() {
                     //otherwise, save it
                     receivedMsgs.insert(std::make_pair(packedMsg.senderId, packedMsg.msg_id));
                     // std::cout << "Received " << wrapedMsg.payload.content << " from " << wrapedMsg.sender.id <<  " " << &wrapedMsg << "\n";
-                    // std::cout << "PL Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
                     for (long unsigned int i=0; i<packedMsg.nMsg;i++) {
-                        std::ostringstream oss;
-                        oss << "d " << packedMsg.senderId << " " << packedMsg.payloads[i].content;
-                        this->writeLogs(oss.str());
+                        // std::cout << "PL  " << packedMsg.payloads[i].content << " from " << packedMsg.senderId <<  "\n";
+                        // std::ostringstream oss;
+                        // oss << "d " << packedMsg.senderId << " " << packedMsg.payloads[i].content;
+                        // this->writeLogs(oss.str());
 
                         this->deliverCallBack({packedMsg.senderId, packedMsg.receiverId, packedMsg.payloads[i], packedMsg.is_ack});
                     }

@@ -54,23 +54,24 @@ void UniReliableBroadcast::start() {
     this->bestEffortBroadcast.start();
 }
 
-void UniReliableBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
-    std::ostringstream oss;
-    oss << "b " << msg;
-    this->writeLogs(oss.str());
-    Payload extendMsg = this->addSelfHost(msg, seqNum);
-    this->bestEffortBroadcast.broadcast(extendMsg);
-    this->acksPendingLock.lock();
-    this->addAck(extendMsg, this->localhost.id);
-    this->addPending(extendMsg);
-    this->acksPendingLock.unlock();
+// void UniReliableBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
+//     std::ostringstream oss;
+//     oss << "b " << msg;
+//     this->writeLogs(oss.str());
+//     Payload extendMsg = this->addSelfHost(msg, seqNum);
+//     this->bestEffortBroadcast.broadcast(extendMsg);
+//     this->acksPendingLock.lock();
+//     this->addAck(extendMsg, this->localhost.id);
+//     this->addPending(extendMsg);
+//     this->acksPendingLock.unlock();
 
-}
+// }
 
 void UniReliableBroadcast::broadcast(Payload payload) {
-    std::ostringstream oss;
-    oss << "b " << payload.content;
-    this->writeLogs(oss.str());
+    // std::ostringstream oss;
+    // oss << "b " << payload.content;
+    // this->writeLogs(oss.str());
+    // std::cout << "URB bc " << payload.vectorClock[0] <<" "<< payload.vectorClock[1] << " "<< payload.vectorClock[2] <<"\n";
     this->bestEffortBroadcast.broadcast(payload);
     this->acksPendingLock.lock();
     this->addAck(payload, this->localhost.id);
@@ -151,18 +152,18 @@ void UniReliableBroadcast::receive(Msg wrapedMsg) {
 
 void UniReliableBroadcast::deliver(Msg wrapedMsg) {
     this->delivered.insert(wrapedMsg.payload);
-    std::ostringstream oss;
-    // std::cout << "URB Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
-    oss << "d " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id;
-    this->writeLogs(oss.str());
+    // std::ostringstream oss;
+    // // std::cout << "URB Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    // oss << "d " << wrapedMsg.payload.content << " " << wrapedMsg.payload.id;
+    // this->writeLogs(oss.str());
     this->deliverCallBack(wrapedMsg);
 
 }
 
-Payload UniReliableBroadcast::addSelfHost(unsigned int msg, unsigned long seqNum) {
-    // return std::make_pair(this->localhost.id, msg);
-    return Payload({this->localhost.id, msg, seqNum});
-}
+// Payload UniReliableBroadcast::addSelfHost(unsigned int msg, unsigned long seqNum) {
+//     // return std::make_pair(this->localhost.id, msg);
+//     return Payload({this->localhost.id, msg, seqNum});
+// }
 
 void UniReliableBroadcast::writeLogs(std::string log) {
     this->logsLock.lock();

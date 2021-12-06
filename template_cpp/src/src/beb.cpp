@@ -37,29 +37,30 @@ void BestEffortBroadcast::start() {
     this->perfectLink.start();
 }
 
-void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
-    std::ostringstream oss;
-    oss << "b " << msg;
-    this->writeLogs(oss.str());
+// void BestEffortBroadcast::broadcast(unsigned int msg, unsigned long seqNum) {
+//     std::ostringstream oss;
+//     oss << "b " << msg;
+//     this->writeLogs(oss.str());
     
-    for (auto host : this->networks) {
-        if (host.id == this->localhost.id) {
-            selfDeliver(msg);
-        } else {
-            this->perfectLink.put(host, msg, seqNum);  // broadcasting the message instead of just putting it in the queue  
-        }
-    }
-}
+//     for (auto host : this->networks) {
+//         if (host.id == this->localhost.id) {
+//             selfDeliver(msg);
+//         } else {
+//             this->perfectLink.put(host, msg, seqNum); 
+//         }
+//     }
+// }
 
 void BestEffortBroadcast::broadcast(Payload msg) {
-    std::ostringstream oss;
-    oss << "b " << msg.content;
-    this->writeLogs(oss.str());   
+    // std::ostringstream oss;
+    // oss << "b " << msg.content;
+    // this->writeLogs(oss.str());   
     for (auto host : this->networks) {
+        // std::cout << "BEB bc " << msg.vectorClock[0] <<" "<< msg.vectorClock[1] << " "<< msg.vectorClock[2] <<" to "<< host.id <<"\n";
         if (host.id == this->localhost.id) {
             selfDeliver(msg.content);
         } else {
-            this->perfectLink.put(host, msg);  // broadcasting the message instead of just putting it in the queue  
+            this->perfectLink.put(host, msg);  
         }
     }
 }
@@ -69,18 +70,19 @@ std::vector<std::string> BestEffortBroadcast::getLogs() {
 } 
 
 void BestEffortBroadcast::deliver(Msg wrapedMsg) {
-    std::ostringstream oss;
-    // std::cout << "BEB Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
-    oss << "d " << wrapedMsg.payload.id << " " << wrapedMsg.payload.content;
-    this->writeLogs(oss.str());
+    // std::ostringstream oss;
+    // // std::cout << "BEB Delivered " << wrapedMsg.payload.content << " from " << wrapedMsg.payload.id <<  "\n";
+    // oss << "d " << wrapedMsg.payload.id << " " << wrapedMsg.payload.content;
+    // this->writeLogs(oss.str());
 
     this->deliverCallBack(wrapedMsg);
 }
 
 void BestEffortBroadcast::selfDeliver(unsigned int msg) {
-    std::ostringstream oss;
-    oss << "d " << localhost.id << " " << msg;
-    this->writeLogs(oss.str());
+    // std::cout << "BEB Self Delivered " << msg << " from myself\n";
+    // std::ostringstream oss;
+    // oss << "d " << localhost.id << " " << msg;
+    // this->writeLogs(oss.str());
     
 }
 

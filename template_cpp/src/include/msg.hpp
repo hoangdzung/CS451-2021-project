@@ -3,6 +3,9 @@
 #include <utility> 
 #include <array>
 
+#define MAX_PROCESSES 128
+#define MAX_MSGS 50
+
 // typedef std::pair<unsigned long, unsigned int> host_msg_type;
 typedef unsigned long host_id_type;
 struct pair_hash {
@@ -20,15 +23,29 @@ struct pair_hash {
 struct Payload {
     unsigned long id;
     unsigned int content;
-    unsigned long seqNum;
+    unsigned long vectorClock[MAX_PROCESSES];
+    // unsigned long seqNum
+    Payload() {};
+    Payload(unsigned long id_, unsigned int content_, std::vector<unsigned long> vectorClock_) :
+    id(id_), content(content_) {
+        std::copy(vectorClock_.begin(), vectorClock_.begin() + MAX_PROCESSES, vectorClock);
+    }
+
     public:
     bool operator==( const Payload& other ) const {
+        for (int i =0;i<MAX_PROCESSES;i++) {
+            if (vectorClock[i] != other.vectorClock[i])
+                return false;
+        }
         return id == other.id &&
-                content == other.content &&
-                seqNum == other.seqNum;
+                content == other.content;
     }
     bool operator <(const Payload& other) const {
-        return seqNum > other.seqNum; //to get the smallest one first
+        for (int i=0;i<MAX_PROCESSES;i++) {
+            if (vectorClock[i] != other.vectorClock[i])
+                return vectorClock[i] < other.vectorClock[i];
+        }
+        return false; 
     }
 };
 
@@ -56,13 +73,13 @@ struct Msg {
                     receiverId == other.receiverId &&
                      payload == other.payload;
     }
-    bool operator <( const Msg& other ) const {
-        // if (payload.seqNum == other.payload.seqNum) {
-        //     return msg_id < other.msg_id;
-        // } else {
-            return payload.seqNum < other.payload.seqNum;
-        // }
-    }
+    // bool operator <( const Msg& other ) const {
+    //     // if (payload.seqNum == other.payload.seqNum) {
+    //     //     return msg_id < other.msg_id;
+    //     // } else {
+    //         return payload.seqNum < other.payload.seqNum;
+    //     // }
+    // }
 };
 
 struct PackedMsg {
@@ -71,7 +88,7 @@ struct PackedMsg {
     unsigned long msg_id;
     bool is_ack;
     // unsigned int content;
-    Payload payloads[500];
+    Payload payloads[MAX_MSGS];
     long unsigned int nMsg; 
     PackedMsg() {};
     PackedMsg(host_id_type senderId_, host_id_type receiverId_, unsigned long msg_id_, bool is_ack_, std::vector<Payload> payload_, long unsigned int nMsg_) :
@@ -92,6 +109,6 @@ struct PackedMsg {
 
 struct hash_custom {
   size_t operator()(const Payload & x) const {
-    return std::hash<host_id_type>()(x.id) ^ std::hash< unsigned int>()(x.content) ^ std::hash<long unsigned int>()(x.seqNum);
+    return std::hash<host_id_type>()(x.id) ^ std::hash< unsigned int>()(x.content) ^ std::hash<unsigned long>()(x.vectorClock[x.id-1]);
   }
 };
