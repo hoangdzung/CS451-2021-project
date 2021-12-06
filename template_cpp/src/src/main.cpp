@@ -112,8 +112,8 @@ int main(int argc, char **argv) {
   fifo.start();
   for (unsigned int msg=1;msg<=m;msg ++) {
     fifo.broadcast(msg);      
-    // if (msg%100==0)
-    std::this_thread::sleep_for(std::chrono::microseconds(1));
+    if (msg%(2500/ hosts.size())==0)
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
   // std::cout << "Done" << "\n";
   // After a process finishes broadcasting,
